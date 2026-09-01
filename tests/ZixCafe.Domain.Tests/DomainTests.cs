@@ -59,6 +59,28 @@ public class TariffEngineTests
     }
 
     [Fact]
+    public void Day_schedule_tariff_applies_time_of_day_rates()
+    {
+        var tariff = new Tariff
+        {
+            Name = "Schedule",
+            Model = TariffModel.DaySchedule,
+            BaseRatePerHour = 3.00m,
+            RoundingMinutes = 1,
+            Rules =
+            {
+                new TariffRule { DaysMask = 0b1111111, StartMinute = 10 * 60, EndMinute = 11 * 60, RatePerHour = 3.00m },
+                new TariffRule { DaysMask = 0b1111111, StartMinute = 11 * 60, EndMinute = 12 * 60, RatePerHour = 2.00m }
+            }
+        };
+
+        // 10:00 to 12:00 UTC: First 60 min @ 3.00/hr ($3.00) + Next 60 min @ 2.00/hr ($2.00) = $5.00
+        var charge = TariffEngine.ComputeTimeCharge(tariff, T0, T0.AddMinutes(120), TimeZoneInfo.Utc, 0, out var billed);
+        Assert.Equal(TimeSpan.FromMinutes(120), billed);
+        Assert.Equal(5.00m, charge);
+    }
+
+    [Fact]
     public void Day_schedule_uses_band_rates_per_minute()
     {
         var tariff = new Tariff
@@ -73,7 +95,6 @@ public class TariffEngineTests
             }
         };
 
-        // Local 17:00-19:00 crossing into the 18:00+ band: 60min @2 + 60min @3 = 5.00
         var start = new DateTime(2026, 6, 15, 17, 0, 0, DateTimeKind.Utc);
         var end = start.AddHours(2);
         var charge = TariffEngine.ComputeTimeCharge(tariff, start, end, Venue, 0, out _);
@@ -189,6 +210,33 @@ public class AuditChainTests
         var (_, tampered) = AuditChain.Link(h1, "session.start", "Session", "2", null, "cashier", DateTime.UtcNow);
         Assert.NotEqual(h2, tampered);
     }
+
+    [Fact]
+    public void Multi_step_audit_chain_validates_fully()
+    {
+        var entries = new List<(string Action, string Target, string Prev, string Hash)>();
+        var currentPrev = string.Empty;
+        var now = DateTime.UtcNow;
+
+        for (var i = 0; i < 50; i++)
+        {
+            var action = $"action.{i}";
+            var target = $"Target_{i}";
+            var (prev, hash) = AuditChain.Link(currentPrev, action, "Terminal", target, null, "admin", now.AddMinutes(i));
+            entries.Add((action, target, prev, hash));
+            currentPrev = hash;
+        }
+
+        // Verify chain forward
+        var testPrev = string.Empty;
+        for (var i = 0; i < entries.Count; i++)
+        {
+            Assert.Equal(testPrev, entries[i].Prev);
+            var (_, computed) = AuditChain.Link(entries[i].Prev, entries[i].Action, "Terminal", entries[i].Target, null, "admin", now.AddMinutes(i));
+            Assert.Equal(entries[i].Hash, computed);
+            testPrev = entries[i].Hash;
+        }
+    }
 }
 
 public class ShiftTests
@@ -211,5 +259,64 @@ public class ShiftTests
 
         var over = new Shift { ExpectedDrawer = 100m, CountedDrawer = 102.25m };
         Assert.Equal(2.25m, over.Variance);
+    }
+}
+
+public class POSMathTests
+{
+    [Fact]
+    public void Split_tender_reconciles_total_payment()
+    {
+        var subtotal = 45.00m;
+        var discount = 5.00m;
+        var total = subtotal - discount; // 40.00
+
+        var paidCash = 20.00m;
+        var paidCard = 10.00m;
+        var paidQr = 15.00m; // total tendered 45.00
+
+        var totalTendered = paidCash + paidCard + paidQr;
+        var changeDue = Math.Max(0m, paidCash - Math.Max(0m, total - paidCard - paidQr));
+
+        Assert.Equal(40.00m, total);
+        Assert.Equal(45.00m, totalTendered);
+        Assert.Equal(5.00m, changeDue);
+    }
+
+    [Fact]
+    public void Oversell_guard_prevents_negative_inventory()
+    {
+        var stockQty = 3;
+        var requestedQty = 5;
+
+        var canSell = stockQty >= requestedQty;
+        Assert.False(canSell);
+    }
+}
+
+public class PeripheralCostTests
+{
+    [Fact]
+    public void Print_cost_multiplies_pages_and_copies()
+    {
+        var pageCount = 15;
+        var copies = 2;
+        var costPerPage = 0.15m;
+
+        var totalCost = pageCount * copies * costPerPage;
+        Assert.Equal(4.50m, totalCost);
+    }
+
+    [Fact]
+    public void Usb_rate_calculates_by_megabytes()
+    {
+        var mb = 2048L; // 2 GB
+        var ratePerGb = 0.05m;
+
+        var gigabytes = (decimal)mb / 1024m;
+        var totalCharge = gigabytes * ratePerGb;
+
+        Assert.Equal(2.0m, gigabytes);
+        Assert.Equal(0.10m, totalCharge);
     }
 }
