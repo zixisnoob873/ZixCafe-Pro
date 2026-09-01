@@ -1,0 +1,62 @@
+<UserControl x:Class="ZixCafe.Server.App.Rack.TerminalTile"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="204" Height="108" Margin="0,0,12,12">
+    <Border x:Name="Card" Background="{StaticResource PanelBrush}"
+            BorderBrush="{StaticResource LineBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource TileRadius}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Rectangle x:Name="Rail" Grid.Column="0" Width="2" Fill="Transparent" Margin="0,12" />
+
+            <Grid Grid.Column="1" Margin="12,10,12,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Name}" Style="{StaticResource CapsLabel}"
+                               Foreground="{StaticResource InkBrush}" FontSize="13"
+                               VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Style="{StaticResource StatusPill}"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Margin="0,0,5,0"
+                                     Fill="{Binding StatusBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource CapsLabel}"
+                                       FontSize="10" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TimeLabel}" Style="{StaticResource CapsLabel}"
+                                   FontSize="9" Margin="0,0,0,2" />
+                        <TextBlock Text="{Binding TimeText}" Style="{StaticResource MonoData}"
+                                   FontSize="22"
+                                   Foreground="{StaticResource GoldBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding AmountText}" Style="{StaticResource MonoData}"
+                               FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                               Foreground="{StaticResource GhostBrush}" />
+                </Grid>
+
+                <TextBlock Grid.Row="2" Text="{Binding ZoneName}" Style="{StaticResource CapsLabel}"
+                           FontSize="10" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

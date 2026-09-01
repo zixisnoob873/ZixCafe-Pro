@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Brand mark: authored hexagonal "Z" bolt, gold on black. The same
+         geometry ships as SVG in the installer assets; this is the live copy. -->
+
+    <GeometryGroup x:Key="ZixMarkGeometry" FillRule="EvenOdd">
+        <PathGeometry Figures="M 32,2 L 58,17 L 58,47 L 32,62 L 6,47 L 6,17 Z" />
+    </GeometryGroup>
+
+    <PathGeometry x:Key="ZixBoltGeometry" Figures="M 36,12 L 22,34 L 31,34 L 26,52 L 44,28 L 34,28 L 41,12 Z" />
+
+    <Geometry x:Key="IconTerminal">M 3,4 H 21 V 16 H 3 Z M 7,20 H 17 M 12,16 V 20</Geometry>
+    <Geometry x:Key="IconQueue">M 4,6 H 20 M 4,12 H 16 M 4,18 H 12</Geometry>
+    <Geometry x:Key="IconCoin">M 12,3 A 9,9 0 1 0 12,21 A 9,9 0 1 0 12,3 M 12,7 V 17 M 9,9 H 15</Geometry>
+    <Geometry x:Key="IconMembers">M 8,11 A 4,4 0 1 0 8,3 A 4,4 0 1 0 8,11 M 2,21 C 2,16.6 4.7,14 8,14 C 11.3,14 14,16.6 14,21 M 16,3.5 A 4,4 0 0 1 16,11 M 17,14.3 C 19.8,14.9 22,17.2 22,21</Geometry>
+    <Geometry x:Key="IconTicket">M 3,8 C 3,6.9 3.9,6 5,6 H 19 C 20.1,6 21,6.9 21,8 V 10 A 2,2 0 0 0 21,14 V 16 C 21,17.1 20.1,18 19,18 H 5 C 3.9,18 3,17.1 3,16 V 14 A 2,2 0 0 0 3,10 Z M 12,6 V 18</Geometry>
+    <Geometry x:Key="IconChart">M 4,20 V 10 M 10,20 V 4 M 16,20 V 13 M 22,20 H 2</Geometry>
+    <Geometry x:Key="IconGear">M 12,8 A 4,4 0 1 0 12,16 A 4,4 0 1 0 12,8 M 12,2 V 5 M 12,19 V 22 M 2,12 H 5 M 19,12 H 22 M 4.9,4.9 L 7,7 M 17,17 L 19.1,19.1 M 4.9,19.1 L 7,17 M 17,7 L 19.1,4.9</Geometry>
+    <Geometry x:Key="IconAlert">M 12,3 L 22,20 H 2 Z M 12,9 V 14 M 12,17 V 17.5</Geometry>
+</ResourceDictionary>

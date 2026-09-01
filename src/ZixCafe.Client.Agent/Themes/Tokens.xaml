@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+    ZixCafe Pro design tokens — LOCKED (DESIGN.md). Matte black + gold.
+    Direction contract (new-work): the desk is a private members' club in a
+    dark hall. Gold is light: it lands only on money, time, and selection.
+    Everything else recedes into warm blacks separated by hairlines. No glows,
+    no gradients-as-decoration, no color-only status. World thesis: "Quiet
+    ownership of a loud floor."
+    -->
+
+    <Color x:Key="VoidColor">#0C0A09</Color>
+    <Color x:Key="PanelColor">#1C1917</Color>
+    <Color x:Key="RaisedColor">#292524</Color>
+    <Color x:Key="LineColor">#44403C</Color>
+    <Color x:Key="InkColor">#FAFAF9</Color>
+    <Color x:Key="GhostColor">#A8A29E</Color>
+    <Color x:Key="GoldColor">#FBBF24</Color>
+    <Color x:Key="GoldDeepColor">#D97706</Color>
+    <Color x:Key="RunColor">#22C55E</Color>
+    <Color x:Key="WarnColor">#F97316</Color>
+    <Color x:Key="AlertColor">#EF4444</Color>
+
+    <SolidColorBrush x:Key="VoidBrush" Color="{StaticResource VoidColor}" />
+    <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}" />
+    <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+    <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
+    <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
+    <SolidColorBrush x:Key="GhostBrush" Color="{StaticResource GhostColor}" />
+    <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource GoldColor}" />
+    <SolidColorBrush x:Key="GoldDeepBrush" Color="{StaticResource GoldDeepColor}" />
+    <SolidColorBrush x:Key="RunBrush" Color="{StaticResource RunColor}" />
+    <SolidColorBrush x:Key="WarnBrush" Color="{StaticResource WarnColor}" />
+    <SolidColorBrush x:Key="AlertBrush" Color="{StaticResource AlertColor}" />
+
+    <SolidColorBrush x:Key="TextOnGoldBrush" Color="{StaticResource VoidColor}" />
+
+    <Thickness x:Key="HairlineThickness">1</Thickness>
+    <Thickness x:Key="CardPadding">16</Thickness>
+    <CornerRadius x:Key="TileRadius">8</CornerRadius>
+    <CornerRadius x:Key="InputRadius">4</CornerRadius>
+    <GridLength x:Key="NavWidth">200</GridLength>
+</ResourceDictionary>

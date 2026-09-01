@@ -1,0 +1,105 @@
+<Window x:Class="ZixCafe.Client.Agent.LockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ZixCafe Pro"
+        WindowStyle="None" ResizeMode="NoResize"
+        WindowState="Maximized" Topmost="True"
+        ShowInTaskbar="False"
+        Background="{StaticResource VoidBrush}"
+        FontFamily="{StaticResource BodyFont}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                Background="{StaticResource PanelBrush}">
+            <Grid Margin="32,16">
+                <StackPanel Orientation="Horizontal">
+                    <Path Width="20" Height="20" Fill="{StaticResource GoldBrush}"
+                          Data="M 20,2 L 34,10 L 34,26 L 20,34 L 6,26 L 6,10 Z M 23,7 L 12,21 L 18,21 L 15,29 L 26,16 L 20,16 L 24,7 Z"
+                          Stretch="Uniform" />
+                    <TextBlock Margin="10,0,0,0" Text="ZIXCAFE" VerticalAlignment="Center"
+                               Style="{StaticResource DisplayHeading}" FontSize="14" />
+                </StackPanel>
+                <TextBlock x:Name="TerminalNameText" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Style="{StaticResource CapsLabel}" Text="PC —" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="CountdownText" Text="00:00:00"
+                           FontFamily="{StaticResource DataFont}" FontWeight="Medium" FontSize="120"
+                           Foreground="{StaticResource GoldBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="StatusText" Text="Ask the front desk to start your session."
+                           Style="{StaticResource BodyText}" FontSize="16" Opacity="0.85"
+                           Foreground="{StaticResource GhostBrush}"
+                           HorizontalAlignment="Center" Margin="0,8,0,0" />
+                <TextBlock x:Name="ChargeText" Text=""
+                           Style="{StaticResource MonoData}" FontSize="18"
+                           Foreground="{StaticResource InkBrush}"
+                           HorizontalAlignment="Center" Margin="0,12,0,0"
+                           Visibility="Collapsed" />
+            </StackPanel>
+        </Grid>
+
+        <Border x:Name="Banner" Grid.Row="2" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0"
+                Visibility="Collapsed">
+            <TextBlock x:Name="BannerText" Margin="32,10" Style="{StaticResource BodyText}"
+                       Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap" />
+        </Border>
+
+        <Border x:Name="ChatDrawer" Grid.Row="3" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0"
+                Visibility="Collapsed">
+            <Grid Margin="32,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ItemsControl x:Name="ChatLog">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="0,2" TextWrapping="Wrap"
+                                       Style="{StaticResource BodyText}" FontSize="13">
+                                <Run Text="{Binding From, Mode=OneWay}" FontWeight="SemiBold"
+                                     Foreground="{StaticResource GoldBrush}" />
+                                <Run Text="{Binding Message, Mode=OneWay}"
+                                     Foreground="{StaticResource InkBrush}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ChatInput" MaxLength="300" FontSize="13" Padding="8,5" />
+                    <Button x:Name="ChatSendButton" Grid.Column="1" Content="Send"
+                            Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                            Click="ChatSend_Click" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="4" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0">
+            <Grid Margin="32,12">
+                <TextBlock Text="Staff assistance: press the Call button on the counter."
+                           Style="{StaticResource CapsLabel}" VerticalAlignment="Center" />
+                <Button x:Name="CallStaffButton" Content="Call Staff" Style="{StaticResource GhostButton}"
+                        HorizontalAlignment="Right" Click="CallStaff_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

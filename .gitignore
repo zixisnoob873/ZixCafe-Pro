@@ -1,0 +1,67 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+publish/
+*.publish.xml
+*.pubxml.user
+
+# IDE / VS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Rider
+*.DotSettings.user
+
+# WPF temp projects generated during XAML compile (seen in obj/, but just in case)
+*_wpftmp.*
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+.nuget.apikey
+project.lock.json
+project.fragment.lock.json
+
+# Test results
+[Tt]est[Rr]esult*/
+TestResults/
+coverage/
+*.coverage
+*.trx
+
+# SQLite runtime data (never commit venue data)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+logs/
+*.log
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# User secrets / local config
+*.env
+appsettings.*.local.json
+secrets.json
+
+# License key placeholder (never commit a real one)
+license.key
+
+# Backups
+*.bak
+*~
