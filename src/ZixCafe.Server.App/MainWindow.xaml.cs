@@ -19,6 +19,7 @@ namespace ZixCafe.Server.App;
 public partial class MainWindow : Window
 {
     public sealed record ChatLine(string From, string Message);
+    public sealed record LiveEventLogItem(string Timestamp, string Message, System.Windows.Media.Brush ColorBrush);
 
     public class CartItemViewModel
     {
@@ -31,11 +32,18 @@ public partial class MainWindow : Window
 
     private const string DashboardUrl = "http://localhost:40000/hubs/dashboard";
 
+    private static readonly System.Windows.Media.SolidColorBrush LogColorGreen = new(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E));
+    private static readonly System.Windows.Media.SolidColorBrush LogColorOrange = new(System.Windows.Media.Color.FromRgb(0xF9, 0x73, 0x16));
+    private static readonly System.Windows.Media.SolidColorBrush LogColorRed = new(System.Windows.Media.Color.FromRgb(0xEF, 0x44, 0x44));
+    private static readonly System.Windows.Media.SolidColorBrush LogColorCyan = new(System.Windows.Media.Color.FromRgb(0x06, 0xB6, 0xD4));
+    private static readonly System.Windows.Media.SolidColorBrush LogColorInfo = new(System.Windows.Media.Color.FromRgb(0xA8, 0xA2, 0x9E));
+
     private readonly ObservableCollection<TileViewModel> _tiles = [];
     private readonly ObservableCollection<TileViewModel> _filteredTiles = [];
     private readonly Dictionary<Guid, ObservableCollection<ChatLine>> _chatLogs = [];
     private readonly ObservableCollection<CartItemViewModel> _posCart = [];
     private readonly ObservableCollection<AlertDto> _alerts = [];
+    private readonly ObservableCollection<LiveEventLogItem> _liveEventLogs = [];
 
     private HubConnection? _dashboard;
     private readonly DispatcherTimer _uiClock = new(DispatcherPriority.Normal) { Interval = TimeSpan.FromSeconds(1) };
@@ -61,6 +69,7 @@ public partial class MainWindow : Window
         RackItems.ItemsSource = _filteredTiles;
         PosCartGrid.ItemsSource = _posCart;
         AlertsGrid.ItemsSource = _alerts;
+        LiveEventLogsList.ItemsSource = _liveEventLogs;
 
         ReportTypePicker.ItemsSource = new[] { "Session History", "Audit Trail (SHA-256)" };
         ReportTypePicker.SelectedIndex = 0;
@@ -69,12 +78,68 @@ public partial class MainWindow : Window
 
         _uiClock.Tick += (_, _) =>
         {
+            LiveClockText.Text = DateTime.Now.ToString("HH:mm:ss");
+            LiveDateText.Text = DateTime.Now.ToString("dddd, d MMMM yyyy");
+
             foreach (var tile in _tiles)
             {
                 tile.RefreshTime();
             }
+            UpdateOccupancyMetrics();
         };
         _uiClock.Start();
+
+        AddLiveLog("System initialized · ZixCafe Pro v1.0.0 Commercial Edition", LogColorInfo);
+        AddLiveLog($"Cashier authenticated: {cashier.Name.ToUpperInvariant()} ({cashier.Role.ToString().ToUpperInvariant()})", LogColorGreen);
+        AddLiveLog("SignalR Hub endpoint initialized on 127.0.0.1:40000", LogColorGreen);
+    }
+
+    public void AddLiveLog(string message, System.Windows.Media.Brush color)
+    {
+        var item = new LiveEventLogItem(DateTime.Now.ToString("HH:mm:ss"), message, color);
+        _liveEventLogs.Insert(0, item);
+        while (_liveEventLogs.Count > 150)
+        {
+            _liveEventLogs.RemoveAt(_liveEventLogs.Count - 1);
+        }
+    }
+
+    private void UpdateOccupancyMetrics()
+    {
+        var total = _tiles.Count;
+        var inUse = _tiles.Count(t => t.IsRunning);
+        var idle = total - inUse;
+        var percent = total > 0 ? (int)Math.Round((double)inUse / total * 100) : 0;
+
+        TotalTerminalsText.Text = $"TOTAL: {total}";
+        InUseCountText.Text = $"IN USE: {inUse}";
+        IdleCountText.Text = $"IDLE: {idle}";
+        OccupancyProgressBar.Value = percent;
+        OccupancyRatioText.Text = $"{percent}%";
+    }
+
+    private void ViewTerminalRack_Checked(object sender, RoutedEventArgs e)
+    {
+        if (RackItemsScrollViewer == null) return;
+        RackItemsScrollViewer.Visibility = Visibility.Visible;
+        if (ScreenViewScrollViewer != null) ScreenViewScrollViewer.Visibility = Visibility.Collapsed;
+        if (TelemetryScrollViewer != null) TelemetryScrollViewer.Visibility = Visibility.Collapsed;
+    }
+
+    private void ViewScreenGrid_Checked(object sender, RoutedEventArgs e)
+    {
+        if (RackItemsScrollViewer == null) return;
+        RackItemsScrollViewer.Visibility = Visibility.Collapsed;
+        if (ScreenViewScrollViewer != null) ScreenViewScrollViewer.Visibility = Visibility.Visible;
+        if (TelemetryScrollViewer != null) TelemetryScrollViewer.Visibility = Visibility.Collapsed;
+    }
+
+    private void ViewTelemetryGrid_Checked(object sender, RoutedEventArgs e)
+    {
+        if (RackItemsScrollViewer == null) return;
+        RackItemsScrollViewer.Visibility = Visibility.Collapsed;
+        if (ScreenViewScrollViewer != null) ScreenViewScrollViewer.Visibility = Visibility.Collapsed;
+        if (TelemetryScrollViewer != null) TelemetryScrollViewer.Visibility = Visibility.Visible;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -95,10 +160,16 @@ public partial class MainWindow : Window
                     var tile = _tiles.FirstOrDefault(x => x.TerminalId == state.TerminalId);
                     if (tile is not null)
                     {
+                        var prevRunning = tile.IsRunning;
                         tile.Apply(state);
                         if (tile == _selected)
                         {
                             RenderInspector();
+                        }
+                        if (prevRunning != tile.IsRunning)
+                        {
+                            AddLiveLog($"{state.Name}: Session state changed to {tile.StatusText}", tile.IsRunning ? LogColorGreen : LogColorOrange);
+                            UpdateOccupancyMetrics();
                         }
                     }
                 }));
@@ -116,6 +187,7 @@ public partial class MainWindow : Window
                     {
                         log.RemoveAt(0);
                     }
+                    AddLiveLog($"CHAT [{from}]: {message}", LogColorCyan);
                 }));
 
             _dashboard.On<string, string, string, Guid?, DateTime>("AlertRaised",
@@ -125,6 +197,7 @@ public partial class MainWindow : Window
                     var termName = terminalId.HasValue ? _tiles.FirstOrDefault(t => t.TerminalId == terminalId.Value)?.Name : null;
                     _alerts.Insert(0, new AlertDto(Guid.NewGuid(), severity, kind, message, terminalId, termName, time, false, null, null));
                     while (_alerts.Count > 100) _alerts.RemoveAt(_alerts.Count - 1);
+                    AddLiveLog($"ALERT [{severity}]: {message} ({(termName ?? "Floor")})", LogColorRed);
                 }));
 
             _dashboard.On<IReadOnlyList<WaitlistEntryDto>>("WaitlistChanged", waiting =>
@@ -134,14 +207,16 @@ public partial class MainWindow : Window
             await _dashboard.InvokeAsync(nameof(IDashboardServer.SubscribeAsync));
 
             HealthText.Text = "SERVER · PORT 40000 · ONLINE";
+            AddLiveLog("SignalR Dashboard hub connection established successfully", LogColorGreen);
 
             await RefreshProductsAsync();
             await RefreshSettingsViewAsync();
+            UpdateOccupancyMetrics();
         }
         catch (Exception ex)
         {
             HealthText.Text = "SERVER · ERROR";
-            MessageBox.Show(this, ex.Message, "ZixCafe Server Studio", MessageBoxButton.OK, MessageBoxImage.Warning);
+            AddLiveLog($"Server connection warning: {ex.Message}", LogColorOrange);
         }
     }
 
@@ -633,6 +708,16 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, response.Error, "Add Extra", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void ChatTerminal_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null)
+        {
+            MessageBox.Show(this, "Please select a workstation tile first to send a chat message.", "ZixCafe Pro Chat", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        ChatInput.Focus();
     }
 
     private async void ChatSend_Click(object sender, RoutedEventArgs e)

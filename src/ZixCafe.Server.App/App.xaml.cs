@@ -116,6 +116,12 @@ public partial class App : Application
                         case "alerts":
                             captureWindow.NavAlerts.IsChecked = true;
                             break;
+                        case "screen":
+                            captureWindow.ViewScreenGrid.IsChecked = true;
+                            break;
+                        case "perf" or "telemetry":
+                            captureWindow.ViewTelemetryGrid.IsChecked = true;
+                            break;
                         case "settings":
                             captureWindow.NavSettings.IsChecked = true;
                             break;
