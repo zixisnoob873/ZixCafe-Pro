@@ -501,6 +501,10 @@ public sealed class AgentConnection : IAsyncDisposable
                     catch
                     {
                     }
+                    finally
+                    {
+                        p.Dispose();
+                    }
                 }
             }
             catch

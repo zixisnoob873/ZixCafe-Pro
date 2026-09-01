@@ -187,22 +187,7 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
             $"{name}: Terminated prohibited application '{processName}'.", terminalId, null);
 
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, "security.app_kill", "Terminal", terminalId.ToString(), $"process={processName}", "system", now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = "security.app_kill",
-            TargetType = "Terminal",
-            TargetId = terminalId.ToString(),
-            DetailJson = $"process={processName}",
-            CashierName = "system",
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
+        await db.AppendAuditAsync("security.app_kill", "Terminal", terminalId.ToString(), $"process={processName}", "system");
         await db.SaveChangesAsync();
     }
 

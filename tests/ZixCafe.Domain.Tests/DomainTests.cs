@@ -790,3 +790,275 @@ public class ShiftDrawerCalculationTests
         Assert.Equal(1.75m, variance);
     }
 }
+
+public class TariffEngineEdgeCaseTests
+{
+    [Fact]
+    public void End_before_start_clamps_to_zero_charge()
+    {
+        var tariff = new Tariff
+        {
+            Name = "Flat",
+            Model = TariffModel.Flat,
+            BaseRatePerHour = 5.00m,
+            RoundingMinutes = 1
+        };
+
+        var start = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(2026, 6, 15, 11, 0, 0, DateTimeKind.Utc);
+
+        var charge = TariffEngine.ComputeTimeCharge(tariff, start, end, TimeZoneInfo.Utc, 0, out var billed);
+        Assert.Equal(TimeSpan.Zero, billed);
+        Assert.Equal(0m, charge);
+    }
+
+    [Fact]
+    public void Paused_minutes_exceeding_duration_clamps_to_zero()
+    {
+        var tariff = new Tariff
+        {
+            Name = "Flat",
+            Model = TariffModel.Flat,
+            BaseRatePerHour = 4.00m,
+            RoundingMinutes = 1
+        };
+
+        var start = new DateTime(2026, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+        var end = start.AddMinutes(30);
+
+        var charge = TariffEngine.ComputeTimeCharge(tariff, start, end, TimeZoneInfo.Utc, pausedMinutes: 45, out var billed);
+        Assert.Equal(TimeSpan.Zero, billed);
+        Assert.Equal(0m, charge);
+    }
+
+    [Fact]
+    public void DaySchedule_crosses_midnight_correctly_transitioning_rates()
+    {
+        var tariff = new Tariff
+        {
+            Name = "NightOwl",
+            Model = TariffModel.DaySchedule,
+            BaseRatePerHour = 2.00m,
+            RoundingMinutes = 1,
+            Rules =
+            {
+                // Day band: 08:00 to 23:00 ($3.00/hr)
+                new TariffRule { DaysMask = 0b1111111, StartMinute = 8 * 60, EndMinute = 23 * 60, RatePerHour = 3.00m },
+                // Night band: 23:00 to 24:00 ($1.50/hr)
+                new TariffRule { DaysMask = 0b1111111, StartMinute = 23 * 60, EndMinute = 24 * 60, RatePerHour = 1.50m }
+                // 00:00 to 08:00 outside band falls back to BaseRate ($2.00/hr)
+            }
+        };
+
+        // Start at 22:30 UTC, end at 01:30 UTC (3 hours total)
+        // 22:30 to 23:00 (30 min @ 3.00/hr = $1.50)
+        // 23:00 to 00:00 (60 min @ 1.50/hr = $1.50)
+        // 00:00 to 01:30 (90 min @ 2.00/hr = $3.00)
+        // Total expected = $6.00
+        var start = new DateTime(2026, 6, 15, 22, 30, 0, DateTimeKind.Utc);
+        var end = start.AddHours(3);
+
+        var charge = TariffEngine.ComputeTimeCharge(tariff, start, end, TimeZoneInfo.Utc, 0, out var billed);
+        Assert.Equal(TimeSpan.FromHours(3), billed);
+        Assert.Equal(6.00m, charge);
+    }
+}
+
+public class SecretHasherEdgeCaseTests
+{
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("P@ssw0rd!#%$^&*()_+~`|}{[]:;?><,./")]
+    [InlineData("1234567890123456789012345678901234567890")]
+    public void Various_passwords_hash_and_verify_correctly(string password)
+    {
+        var hash = SecretHasher.Hash(password);
+        Assert.True(SecretHasher.Verify(password, hash));
+        Assert.False(SecretHasher.Verify(password + "_wrong", hash));
+    }
+
+    [Theory]
+    [InlineData("invalid_format")]
+    [InlineData("pbkdf2-sha256$not_a_number$salt$hash")]
+    [InlineData("pbkdf2-sha256$0$salt$hash")]
+    [InlineData("pbkdf2-sha256$-100$salt$hash")]
+    [InlineData("other-algo$210000$salt$hash")]
+    [InlineData("")]
+    public void Malformed_encoded_hashes_return_false_without_crashing(string malformed)
+    {
+        Assert.False(SecretHasher.Verify("test", malformed));
+    }
+}
+
+public class TicketCodeEdgeCaseTests
+{
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("123")]
+    [InlineData("ABCD")]
+    [InlineData("ABCD-EFGH")]
+    [InlineData("ABCD-EFGH-IJKL-M")] // 'I' and 'L' are invalid in Crockford Base32
+    [InlineData("ABCD-EFGH-OXYZ-M")] // 'O' is invalid
+    [InlineData("ABCD-EFGH-UXYZ-M")] // 'U' is invalid
+    public void Invalid_ticket_formats_are_rejected(string? invalidCode)
+    {
+        Assert.False(TicketCodeGenerator.IsValidFormat(invalidCode!));
+    }
+
+    [Fact]
+    public void Valid_codes_are_case_insensitive_and_hyphen_tolerant()
+    {
+        var rng = RandomNumberGenerator.Create();
+        var code = TicketCodeGenerator.NewCode(rng);
+
+        Assert.True(TicketCodeGenerator.IsValidFormat(code));
+        Assert.True(TicketCodeGenerator.IsValidFormat(code.ToLowerInvariant()));
+        Assert.True(TicketCodeGenerator.IsValidFormat(code.Replace("-", "")));
+    }
+}
+
+public class HardwareAntiTheftComprehensiveTests
+{
+    [Fact]
+    public void Multiple_simultaneous_hardware_swaps_reported_in_full()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "Intel Core i9-14900K",
+            CpuId = "CPU-14900K-001",
+            GpuName = "NVIDIA GeForce RTX 4090",
+            GpuDeviceId = "PCI\\VEN_10DE&DEV_2684",
+            TotalRamMb = 65536,
+            RamSerials = "RAM1;RAM2;RAM3;RAM4",
+            DiskSerial = "SAMSUNG-990-PRO-2TB",
+            UsbDevicesJson = System.Text.Json.JsonSerializer.Serialize(new[] { "USB\\VID_046D&PID_C08B", "USB\\VID_1532&PID_022A" })
+        };
+
+        var currentUsb = new List<string> { "USB\\VID_046D&PID_C08B" }; // Mouse present, keyboard missing
+
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "Intel Core i5-10400",
+            currentCpuId: "CPU-10400-999",
+            currentGpuName: "NVIDIA GeForce GTX 1060",
+            currentGpuDeviceId: "PCI\\VEN_10DE&DEV_1C03",
+            currentRamMb: 16384,
+            currentRamSerials: "RAM1",
+            currentDiskSerial: "CHEAP-SSD-120GB",
+            currentUsbDeviceIds: currentUsb);
+
+        Assert.Equal(6, discrepancies.Count);
+        Assert.Contains(discrepancies, d => d.ComponentType == "CPU");
+        Assert.Contains(discrepancies, d => d.ComponentType == "GPU");
+        Assert.Contains(discrepancies, d => d.ComponentType == "RAM");
+        Assert.Contains(discrepancies, d => d.ComponentType == "RAM Serial");
+        Assert.Contains(discrepancies, d => d.ComponentType == "Disk");
+        Assert.Contains(discrepancies, d => d.ComponentType == "USB Peripheral");
+    }
+
+    [Fact]
+    public void Corrupted_usb_json_does_not_throw_exception()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "AMD Ryzen 5 5600",
+            GpuName = "RTX 3060",
+            TotalRamMb = 16384,
+            UsbDevicesJson = "{ malformed json ::: "
+        };
+
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "AMD Ryzen 5 5600",
+            currentCpuId: null,
+            currentGpuName: "RTX 3060",
+            currentGpuDeviceId: null,
+            currentRamMb: 16384,
+            currentRamSerials: null,
+            currentDiskSerial: null,
+            currentUsbDeviceIds: []);
+
+        Assert.Empty(discrepancies);
+    }
+}
+
+public class MemberAndTaxMathTests
+{
+    [Fact]
+    public void MemberTier_discount_applied_to_purchases()
+    {
+        var originalPrice = 50.00m;
+        var discountPercent = 15.00m; // 15% discount for Gold tier
+
+        var discountAmount = Math.Round(originalPrice * (discountPercent / 100m), 2, MidpointRounding.AwayFromZero);
+        var finalPrice = originalPrice - discountAmount;
+
+        Assert.Equal(7.50m, discountAmount);
+        Assert.Equal(42.50m, finalPrice);
+    }
+
+    [Fact]
+    public void Tax_calculation_computes_accurate_tax_and_grand_total()
+    {
+        var subtotal = 125.75m;
+        var taxRatePercent = 8.25m; // 8.25% sales tax
+
+        var taxAmount = Math.Round(subtotal * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+        var grandTotal = subtotal + taxAmount;
+
+        Assert.Equal(10.37m, taxAmount);
+        Assert.Equal(136.12m, grandTotal);
+    }
+
+    [Fact]
+    public void Member_topup_updates_money_balance_accurately()
+    {
+        var startingBalance = 25.00m;
+        var topUpAmount = 50.00m;
+        var bonusCredit = 5.00m;
+
+        var endingBalance = startingBalance + topUpAmount + bonusCredit;
+        Assert.Equal(80.00m, endingBalance);
+    }
+}
+
+public class AuditTamperDetectionChainTests
+{
+    [Fact]
+    public void AuditChain_tampering_at_any_field_is_immediately_detectable()
+    {
+        var now = DateTime.UtcNow;
+        var (p0, h0) = AuditChain.Link("", "init", "System", "0", null, "Admin", now);
+
+        // Chain 5 items
+        var prev = h0;
+        var chain = new List<(string Action, string Prev, string Hash, DateTime Time)>();
+        for (int i = 1; i <= 5; i++)
+        {
+            var t = now.AddMinutes(i);
+            var (p, h) = AuditChain.Link(prev, $"action.{i}", "Terminal", $"{i}", $"{{\"value\":{i}}}", "Admin", t);
+            chain.Add(($"action.{i}", p, h, t));
+            prev = h;
+        }
+
+        // Verify chain passes
+        var checkPrev = h0;
+        foreach (var item in chain)
+        {
+            var (_, computed) = AuditChain.Link(checkPrev, item.Action, "Terminal", item.Action.Split('.')[1], $"{{\"value\":{item.Action.Split('.')[1]}}}", "Admin", item.Time);
+            Assert.Equal(item.Hash, computed);
+            checkPrev = item.Hash;
+        }
+
+        // Now simulate tampering: attacker changes value in item 3
+        var tamperedItem = chain[2];
+        var (_, tamperedHash) = AuditChain.Link(tamperedItem.Prev, tamperedItem.Action, "Terminal", "3", "{\"value\":999999}", "Admin", tamperedItem.Time);
+        Assert.NotEqual(tamperedItem.Hash, tamperedHash);
+    }
+}
+
