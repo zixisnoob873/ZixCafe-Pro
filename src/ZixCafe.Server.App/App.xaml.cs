@@ -16,6 +16,30 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            var err = args.ExceptionObject?.ToString() ?? "Unknown AppDomain error";
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "zixcafe-server-crash.log"), err); } catch { }
+            MessageBox.Show(err, "ZixCafe Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        };
+
+        DispatcherUnhandledException += (s, args) =>
+        {
+            var err = args.Exception?.ToString() ?? "Unknown Dispatcher error";
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "zixcafe-server-crash.log"), err); } catch { }
+            MessageBox.Show(err, "ZixCafe Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+
+        TaskScheduler.UnobservedTaskException += (s, args) =>
+        {
+            var err = args.Exception?.ToString() ?? "Unknown TaskScheduler error";
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "zixcafe-server-crash.log"), err); } catch { }
+            args.SetObserved();
+        };
+
         var dataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "ZixCafe");
         Directory.CreateDirectory(dataDir);
@@ -44,7 +68,6 @@ public partial class App : Application
             return;
         }
 
-        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         var login = new LoginWindow();
         if (login.ShowDialog() != true || login.AuthenticatedCashier is null)
         {
@@ -54,7 +77,7 @@ public partial class App : Application
 
         var window = new MainWindow(login.AuthenticatedCashier);
         MainWindow = window;
-        ShutdownMode = ShutdownMode.OnMainWindowClose;
+        window.Closed += (_, _) => Shutdown(0);
         window.Show();
     }
 

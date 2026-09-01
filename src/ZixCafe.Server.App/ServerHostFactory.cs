@@ -27,6 +27,7 @@ public static class ServerHostFactory
                 o.LogTo(m => Console.WriteLine(m), LogLevel.Information);
             }
         });
+        builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ZixCafeDbContext>>().CreateDbContext());
 
         builder.Services.AddSignalR();
 

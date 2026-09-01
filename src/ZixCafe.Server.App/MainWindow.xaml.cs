@@ -161,8 +161,8 @@ public partial class MainWindow : Window
 
     private async Task LoadTerminalsAsync()
     {
-        await using var scope = App.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<ZixCafeDbContext>();
+        var dbFactory = App.Services.GetRequiredService<IDbContextFactory<ZixCafeDbContext>>();
+        await using var db = await dbFactory.CreateDbContextAsync();
 
         var terminals = await db.Terminals
             .Include(t => t.Zone)
