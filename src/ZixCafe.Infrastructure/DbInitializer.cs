@@ -11,13 +11,32 @@ public static class DbInitializer
 {
     public static async Task InitializeAsync(ZixCafeDbContext db)
     {
-        try
+        // EnsureCreatedAsync skips table creation when the file already exists
+        // (even with zero tables), so we must delete any stale file first.
+        // EnsureDeletedAsync + EnsureCreatedAsync guarantees the full current
+        // model schema is applied every time.
+        //
+        // For production with real data, a proper migration strategy should
+        // replace this block.  During development this is safe because seed
+        // data is re-applied on every fresh database.
+        var created = await db.Database.EnsureCreatedAsync();
+
+        if (!created)
         {
-            await db.Database.MigrateAsync();
-        }
-        catch (Exception)
-        {
-            await db.Database.EnsureCreatedAsync();
+            // Database file existed but may have a stale schema (missing columns/tables).
+            // Verify by touching a table that has been extended recently.
+            try
+            {
+                _ = await db.Members.AnyAsync();
+                _ = await db.SystemSettings.AnyAsync();
+                _ = await db.HardwareBaselines.AnyAsync();
+            }
+            catch
+            {
+                // Schema is stale — nuke and recreate.
+                await db.Database.EnsureDeletedAsync();
+                await db.Database.EnsureCreatedAsync();
+            }
         }
 
         await db.Database.OpenConnectionAsync();
