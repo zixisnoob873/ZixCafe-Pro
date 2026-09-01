@@ -309,9 +309,10 @@ public partial class MainWindow : Window
 
     private async Task RefreshInspectorHardwareAsync(Guid terminalId)
     {
+        if (_dashboard is null) return;
         try
         {
-            var hw = await _dashboard!.InvokeAsync<HardwareBaselineDto?>(nameof(IDashboardServer.GetTerminalHardwareAsync), terminalId);
+            var hw = await _dashboard.InvokeAsync<HardwareBaselineDto?>(nameof(IDashboardServer.GetTerminalHardwareAsync), terminalId);
             if (hw is not null)
             {
                 InspectorHwCpuGpu.Text = $"CPU: {hw.CpuName}\nGPU: {hw.GpuName}";
@@ -670,7 +671,8 @@ public partial class MainWindow : Window
 
     private async Task RefreshDeskAsync()
     {
-        var shift = await _dashboard!.InvokeAsync<ShiftDto?>(nameof(IDashboardServer.GetCurrentShiftAsync));
+        if (_dashboard is null) return;
+        var shift = await _dashboard.InvokeAsync<ShiftDto?>(nameof(IDashboardServer.GetCurrentShiftAsync));
         if (shift is null)
         {
             ShiftStatusText.Text = "NO ACTIVE SHIFT";
@@ -802,16 +804,18 @@ public partial class MainWindow : Window
 
     private async Task RefreshProductsAsync()
     {
-        _sessionProducts = await _dashboard!.InvokeAsync<IReadOnlyList<ProductDto>>(nameof(IDashboardServer.GetProductsAsync));
-        ProductPicker.ItemsSource = _sessionProducts;
+        if (_dashboard is null) return;
+        _sessionProducts = await _dashboard.InvokeAsync<IReadOnlyList<ProductDto>>(nameof(IDashboardServer.GetProductsAsync));
+        if (ProductPicker is not null) ProductPicker.ItemsSource = _sessionProducts;
 
-        _allProducts = await _dashboard!.InvokeAsync<IReadOnlyList<ProductDetailDto>>(nameof(IDashboardServer.GetProductsFullAsync));
+        _allProducts = await _dashboard.InvokeAsync<IReadOnlyList<ProductDetailDto>>(nameof(IDashboardServer.GetProductsFullAsync));
         FilterPosProducts();
         FilterInventory();
     }
 
     private void FilterPosProducts()
     {
+        if (_allProducts is null) return;
         var q = PosSearchBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
         var cat = PosCategoryFilter?.SelectedItem as string ?? "All";
 
@@ -820,7 +824,7 @@ public partial class MainWindow : Window
             (string.IsNullOrEmpty(q) || p.Name.ToLowerInvariant().Contains(q) || (p.Sku != null && p.Sku.Contains(q)))
         ).ToList();
 
-        PosProductGrid.ItemsSource = filtered;
+        if (PosProductGrid is not null) PosProductGrid.ItemsSource = filtered;
 
         var categories = new HashSet<string> { "All" };
         foreach (var p in _allProducts) categories.Add(p.Category);
@@ -930,9 +934,10 @@ public partial class MainWindow : Window
 
     private async Task RefreshTicketsAsync()
     {
-        var unusedOnly = TicketsUnusedOnlyCheck.IsChecked ?? true;
-        _allTickets = await _dashboard!.InvokeAsync<IReadOnlyList<TicketDto>>(nameof(IDashboardServer.GetTicketsAsync), unusedOnly);
-        TicketsGrid.ItemsSource = _allTickets;
+        if (_dashboard is null) return;
+        var unusedOnly = TicketsUnusedOnlyCheck?.IsChecked ?? true;
+        _allTickets = await _dashboard.InvokeAsync<IReadOnlyList<TicketDto>>(nameof(IDashboardServer.GetTicketsAsync), unusedOnly);
+        if (TicketsGrid is not null) TicketsGrid.ItemsSource = _allTickets;
     }
 
     private async void TicketsFilter_Changed(object sender, RoutedEventArgs e) => await RefreshTicketsAsync();
@@ -996,7 +1001,8 @@ public partial class MainWindow : Window
 
     private async Task RefreshMembersAsync()
     {
-        _allMembers = await _dashboard!.InvokeAsync<IReadOnlyList<MemberDetailDto>>(nameof(IDashboardServer.GetMembersAsync), (string?)null);
+        if (_dashboard is null) return;
+        _allMembers = await _dashboard.InvokeAsync<IReadOnlyList<MemberDetailDto>>(nameof(IDashboardServer.GetMembersAsync), (string?)null);
         FilterMembers();
     }
 
@@ -1004,11 +1010,13 @@ public partial class MainWindow : Window
 
     private void FilterMembers()
     {
+        if (_allMembers is null) return;
         var q = MemberSearchBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
         var filtered = _allMembers.Where(m =>
             string.IsNullOrEmpty(q) || m.Name.ToLowerInvariant().Contains(q) || m.Code.ToLowerInvariant().Contains(q) || (m.Phone != null && m.Phone.Contains(q))
         ).ToList();
-        MembersGrid.ItemsSource = filtered;
+
+        if (MembersGrid is not null) MembersGrid.ItemsSource = filtered;
     }
 
     private async void AddMember_Click(object sender, RoutedEventArgs e)
@@ -1063,6 +1071,7 @@ public partial class MainWindow : Window
 
     private void FilterInventory()
     {
+        if (_allProducts is null) return;
         var q = InvSearchBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
         var cat = InvCategoryFilter?.SelectedItem as string ?? "All";
 
@@ -1071,7 +1080,7 @@ public partial class MainWindow : Window
             (string.IsNullOrEmpty(q) || p.Name.ToLowerInvariant().Contains(q) || (p.Sku != null && p.Sku.Contains(q)))
         ).ToList();
 
-        InventoryGrid.ItemsSource = filtered;
+        if (InventoryGrid is not null) InventoryGrid.ItemsSource = filtered;
 
         var categories = new HashSet<string> { "All" };
         foreach (var p in _allProducts) categories.Add(p.Category);
@@ -1110,8 +1119,9 @@ public partial class MainWindow : Window
 
     private async Task RefreshPeripheralsAsync()
     {
-        var printJobs = await _dashboard!.InvokeAsync<IReadOnlyList<PrintJobDto>>(nameof(IDashboardServer.GetPrintJobsAsync));
-        PrintJobsGrid.ItemsSource = printJobs;
+        if (_dashboard is null) return;
+        var printJobs = await _dashboard.InvokeAsync<IReadOnlyList<PrintJobDto>>(nameof(IDashboardServer.GetPrintJobsAsync));
+        if (PrintJobsGrid is not null) PrintJobsGrid.ItemsSource = printJobs;
     }
 
     private async void ReleasePrint_Click(object sender, RoutedEventArgs e)
@@ -1142,16 +1152,17 @@ public partial class MainWindow : Window
 
     private async Task RefreshReportsAsync()
     {
+        if (_dashboard is null) return;
         var fromDate = DateTime.UtcNow.Date.AddDays(-7);
         var toDate = DateTime.UtcNow;
 
-        var sessions = await _dashboard!.InvokeAsync<IReadOnlyList<SessionHistoryDto>>(
+        var sessions = await _dashboard.InvokeAsync<IReadOnlyList<SessionHistoryDto>>(
             nameof(IDashboardServer.GetSessionHistoryAsync), fromDate, toDate, (Guid?)null);
-        SessionHistoryGrid.ItemsSource = sessions;
+        if (SessionHistoryGrid is not null) SessionHistoryGrid.ItemsSource = sessions;
 
-        var audits = await _dashboard!.InvokeAsync<IReadOnlyList<AuditEntryDto>>(
+        var audits = await _dashboard.InvokeAsync<IReadOnlyList<AuditEntryDto>>(
             nameof(IDashboardServer.GetAuditEntriesAsync), 100);
-        AuditLogGrid.ItemsSource = audits;
+        if (AuditLogGrid is not null) AuditLogGrid.ItemsSource = audits;
     }
 
     private void ReportType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1393,9 +1404,10 @@ public partial class MainWindow : Window
 
     private async Task RefreshSettingsViewAsync()
     {
+        if (_dashboard is null) return;
         try
         {
-            var masterCfg = await _dashboard!.InvokeAsync<MasterSystemSettingsDto>(nameof(IDashboardServer.GetMasterSettingsAsync));
+            var masterCfg = await _dashboard.InvokeAsync<MasterSystemSettingsDto>(nameof(IDashboardServer.GetMasterSettingsAsync));
             if (masterCfg is not null)
             {
                 PopulateConfigFields(masterCfg);
@@ -1405,17 +1417,18 @@ public partial class MainWindow : Window
         {
         }
 
-        _allCashiers = await _dashboard!.InvokeAsync<IReadOnlyList<CashierDto>>(nameof(IDashboardServer.GetCashiersAsync));
-        CashiersGrid.ItemsSource = _allCashiers;
+        _allCashiers = await _dashboard.InvokeAsync<IReadOnlyList<CashierDto>>(nameof(IDashboardServer.GetCashiersAsync));
+        if (CashiersGrid is not null) CashiersGrid.ItemsSource = _allCashiers;
 
-        _allTariffs = await _dashboard!.InvokeAsync<IReadOnlyList<TariffDto>>(nameof(IDashboardServer.GetTariffsAsync));
-        TariffsGrid.ItemsSource = _allTariffs;
+        _allTariffs = await _dashboard.InvokeAsync<IReadOnlyList<TariffDto>>(nameof(IDashboardServer.GetTariffsAsync));
+        if (TariffsGrid is not null) TariffsGrid.ItemsSource = _allTariffs;
 
         await RefreshBackupsListAsync();
     }
 
     private async Task RefreshBackupsListAsync()
     {
+        if (_dashboard is null) return;
         try
         {
             if (_dashboard is null) return;

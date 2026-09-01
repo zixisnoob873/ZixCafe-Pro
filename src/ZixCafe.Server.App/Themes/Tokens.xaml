@@ -2,43 +2,74 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-    ZixCafe Pro design tokens — LOCKED (DESIGN.md). Matte black + gold.
-    Direction contract (new-work): the desk is a private members' club in a
-    dark hall. Gold is light: it lands only on money, time, and selection.
-    Everything else recedes into warm blacks separated by hairlines. No glows,
-    no gradients-as-decoration, no color-only status. World thesis: "Quiet
-    ownership of a loud floor."
+    ZixCafe Pro design tokens — Matte Obsidian Black + Amber Gold + Semantic Status
     -->
 
+    <!-- Core Surfaces & Backgrounds -->
     <Color x:Key="VoidColor">#0C0A09</Color>
-    <Color x:Key="PanelColor">#1C1917</Color>
-    <Color x:Key="RaisedColor">#292524</Color>
-    <Color x:Key="LineColor">#44403C</Color>
+    <Color x:Key="PanelColor">#18181B</Color>
+    <Color x:Key="RaisedColor">#27272A</Color>
+    <Color x:Key="HoverColor">#323238</Color>
+    <Color x:Key="SelectedColor">#3F3F46</Color>
+
+    <!-- Hairline Borders & Dividers -->
+    <Color x:Key="LineColor">#3F3F46</Color>
+    <Color x:Key="LineSubtleColor">#27272A</Color>
+
+    <!-- Typography Text Colors -->
     <Color x:Key="InkColor">#FAFAF9</Color>
-    <Color x:Key="GhostColor">#A8A29E</Color>
+    <Color x:Key="GhostColor">#A1A1AA</Color>
+    <Color x:Key="MutedColor">#71717A</Color>
+
+    <!-- Accent: Amber Gold -->
     <Color x:Key="GoldColor">#FBBF24</Color>
     <Color x:Key="GoldDeepColor">#D97706</Color>
-    <Color x:Key="RunColor">#22C55E</Color>
-    <Color x:Key="WarnColor">#F97316</Color>
-    <Color x:Key="AlertColor">#EF4444</Color>
+    <Color x:Key="GoldSubtleColor">#2A1F0A</Color>
 
+    <!-- Semantic Status Colors -->
+    <Color x:Key="RunColor">#22C55E</Color>
+    <Color x:Key="RunSubtleColor">#052E16</Color>
+    <Color x:Key="WarnColor">#F97316</Color>
+    <Color x:Key="WarnSubtleColor">#431407</Color>
+    <Color x:Key="AlertColor">#EF4444</Color>
+    <Color x:Key="AlertSubtleColor">#450A0A</Color>
+    <Color x:Key="InfoColor">#06B6D4</Color>
+    <Color x:Key="InfoSubtleColor">#083344</Color>
+
+    <!-- Solid Brushes -->
     <SolidColorBrush x:Key="VoidBrush" Color="{StaticResource VoidColor}" />
     <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}" />
     <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+    <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}" />
+    <SolidColorBrush x:Key="SelectedBrush" Color="{StaticResource SelectedColor}" />
+
     <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
+    <SolidColorBrush x:Key="LineSubtleBrush" Color="{StaticResource LineSubtleColor}" />
+
     <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
     <SolidColorBrush x:Key="GhostBrush" Color="{StaticResource GhostColor}" />
+    <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
+
     <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource GoldColor}" />
     <SolidColorBrush x:Key="GoldDeepBrush" Color="{StaticResource GoldDeepColor}" />
+    <SolidColorBrush x:Key="GoldSubtleBrush" Color="{StaticResource GoldSubtleColor}" />
+
     <SolidColorBrush x:Key="RunBrush" Color="{StaticResource RunColor}" />
+    <SolidColorBrush x:Key="RunSubtleBrush" Color="{StaticResource RunSubtleColor}" />
     <SolidColorBrush x:Key="WarnBrush" Color="{StaticResource WarnColor}" />
+    <SolidColorBrush x:Key="WarnSubtleBrush" Color="{StaticResource WarnSubtleColor}" />
     <SolidColorBrush x:Key="AlertBrush" Color="{StaticResource AlertColor}" />
+    <SolidColorBrush x:Key="AlertSubtleBrush" Color="{StaticResource AlertSubtleColor}" />
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
+    <SolidColorBrush x:Key="InfoSubtleBrush" Color="{StaticResource InfoSubtleColor}" />
 
     <SolidColorBrush x:Key="TextOnGoldBrush" Color="{StaticResource VoidColor}" />
 
+    <!-- Geometry / Dimensions -->
     <Thickness x:Key="HairlineThickness">1</Thickness>
     <Thickness x:Key="CardPadding">16</Thickness>
     <CornerRadius x:Key="TileRadius">8</CornerRadius>
-    <CornerRadius x:Key="InputRadius">4</CornerRadius>
-    <GridLength x:Key="NavWidth">200</GridLength>
+    <CornerRadius x:Key="InputRadius">5</CornerRadius>
+    <CornerRadius x:Key="ButtonRadius">5</CornerRadius>
+    <GridLength x:Key="NavWidth">220</GridLength>
 </ResourceDictionary>

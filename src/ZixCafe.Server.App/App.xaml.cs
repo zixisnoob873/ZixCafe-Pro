@@ -86,6 +86,44 @@ public partial class App : Application
 
                 await Task.Delay(1500);
 
+                var viewArg = e.Args.FirstOrDefault(a => a.StartsWith("--test-view="));
+                if (viewArg is not null)
+                {
+                    var viewName = viewArg["--test-view=".Length..].ToLowerInvariant();
+                    switch (viewName)
+                    {
+                        case "desk":
+                            captureWindow.NavDesk.IsChecked = true;
+                            break;
+                        case "sales" or "pos":
+                            captureWindow.NavSales.IsChecked = true;
+                            break;
+                        case "tickets" or "vouchers":
+                            captureWindow.NavTickets.IsChecked = true;
+                            break;
+                        case "members":
+                            captureWindow.NavMembers.IsChecked = true;
+                            break;
+                        case "inventory":
+                            captureWindow.NavInventory.IsChecked = true;
+                            break;
+                        case "peripherals":
+                            captureWindow.NavPeripherals.IsChecked = true;
+                            break;
+                        case "reports":
+                            captureWindow.NavReports.IsChecked = true;
+                            break;
+                        case "alerts":
+                            captureWindow.NavAlerts.IsChecked = true;
+                            break;
+                        case "settings":
+                            captureWindow.NavSettings.IsChecked = true;
+                            break;
+                    }
+                    captureWindow.UpdateLayout();
+                    await Task.Delay(1000);
+                }
+
                 var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(1440, 900, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
                 rtb.Render(captureWindow);
                 var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
