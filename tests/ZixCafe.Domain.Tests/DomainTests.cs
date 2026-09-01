@@ -772,3 +772,21 @@ public class SystemConfigAndAuditIntegrationTests
         Assert.Contains(mode, validModes);
     }
 }
+
+public class ShiftDrawerCalculationTests
+{
+    [Fact]
+    public void ExpectedDrawer_CalculatesAccurately_WithSessionsAndSales()
+    {
+        var openingFloat = 100.00m;
+        var sessionAmounts = new List<decimal> { 15.50m, 22.00m, 8.25m };
+        var salesCash = new List<decimal> { 5.00m, 12.50m };
+
+        var expectedDrawer = openingFloat + sessionAmounts.Sum() + salesCash.Sum();
+        Assert.Equal(163.25m, expectedDrawer);
+
+        var countedDrawer = 165.00m;
+        var variance = countedDrawer - expectedDrawer;
+        Assert.Equal(1.75m, variance);
+    }
+}
