@@ -23,6 +23,12 @@ public sealed class AgentConnection : IAsyncDisposable
     private CancellationTokenSource? _workerCts;
     private CancellationTokenSource? _offlineGraceCts;
     private int _offlineGracePeriodSeconds = 180;
+    private MasterSystemSettingsDto? _activeSettings;
+    private readonly object _prohibitedAppsLock = new();
+    private HashSet<string> _prohibitedApps = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "cheatengine", "cheatengine-x86_64", "artmoney", "speedhack", "wireshark", "processhacker"
+    };
     private Guid? _terminalId;
 
     public bool HasWindow => _window is not null;
@@ -90,6 +96,19 @@ public sealed class AgentConnection : IAsyncDisposable
                 CancelOfflineGrace();
                 TerminalStateStore.ClearCountdownCache();
                 _window?.EndSession(reason);
+
+                // Run privacy scrubber
+                if (_activeSettings is not null)
+                {
+                    Task.Run(() =>
+                    {
+                        PrivacyScrubber.PerformSessionEndScrubbing(_activeSettings);
+                        if (_activeSettings.EnableRebootToRestoreOnSessionEnd)
+                        {
+                            DisklessCoordination.CoordinateWipeAndReboot(_activeSettings.DisklessProvider, true);
+                        }
+                    });
+                }
             });
 
         _hub.On<DateTime, DateTime?, decimal>("TimeSync",
@@ -171,6 +190,54 @@ public sealed class AgentConnection : IAsyncDisposable
             if (seconds > 0)
             {
                 _offlineGracePeriodSeconds = seconds;
+            }
+        });
+
+        _hub.On<MasterSystemSettingsDto>("ApplyRuntimePolicy", (settings) =>
+        {
+            _activeSettings = settings;
+            _offlineGracePeriodSeconds = settings.NetworkDropGracePeriodSeconds;
+            
+            // Hot-reload prohibited apps set
+            if (!string.IsNullOrWhiteSpace(settings.ProhibitedProcessesCsv))
+            {
+                var apps = settings.ProhibitedProcessesCsv
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                lock (_prohibitedAppsLock)
+                {
+                    _prohibitedApps = new HashSet<string>(apps, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+
+            // Hot-reload kiosk shell lock
+            KioskGuard.Install(settings.ShellLockBlockTaskManager, settings.ShellLockBlockWinKey);
+
+            // Hot-reload display refresh rate if configured
+            if (settings.EnforceNativeDisplayRefreshRate)
+            {
+                DisplayRefreshRateEnforcer.EnforceMaximumNativeRefreshRate(out _, out _);
+            }
+        });
+
+        _hub.On<string>("TriggerStandby", (mode) =>
+        {
+            try
+            {
+                if (mode.Equals("Shutdown", StringComparison.OrdinalIgnoreCase))
+                {
+                    Process.Start(new ProcessStartInfo("shutdown", "/s /t 5 /c \"Energy Saver: Station powering down due to inactivity\"") { CreateNoWindow = true, UseShellExecute = false });
+                }
+                else if (mode.Equals("Hibernate", StringComparison.OrdinalIgnoreCase))
+                {
+                    Process.Start(new ProcessStartInfo("shutdown", "/h") { CreateNoWindow = true, UseShellExecute = false });
+                }
+                else
+                {
+                    Process.Start(new ProcessStartInfo("rundll32.exe", "powrprof.dll,SetSuspendState 0,1,0") { CreateNoWindow = true, UseShellExecute = false });
+                }
+            }
+            catch
+            {
             }
         });
 
@@ -407,15 +474,16 @@ public sealed class AgentConnection : IAsyncDisposable
 
     private async Task ProhibitedAppWatcherLoopAsync(CancellationToken ct)
     {
-        var blacklisted = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "cheatengine", "cheatengine-x86_64", "artmoney", "speedhack", "wireshark", "processhacker"
-        };
-
         while (!ct.IsCancellationRequested)
         {
             try
             {
+                HashSet<string> blacklisted;
+                lock (_prohibitedAppsLock)
+                {
+                    blacklisted = new HashSet<string>(_prohibitedApps, StringComparer.OrdinalIgnoreCase);
+                }
+
                 var processes = Process.GetProcesses();
                 foreach (var p in processes)
                 {

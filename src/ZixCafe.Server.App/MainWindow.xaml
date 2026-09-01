@@ -92,6 +92,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Terminal Rack" Style="{StaticResource DisplayHeading}" VerticalAlignment="Center" />
 
@@ -103,9 +104,11 @@
 
                         <Button Grid.Column="2" Content="Pair Terminal" Style="{StaticResource GhostButton}"
                                 Margin="0,0,8,0" Click="PairTerminal_Click" />
-                        <Button Grid.Column="3" Content="Lock All (Idle)" Style="{StaticResource GhostButton}"
+                        <Button Grid.Column="3" Content="Wake All (WoL)" Style="{StaticResource GhostButton}"
+                                Margin="0,0,8,0" Click="WakeAllWoL_Click" />
+                        <Button Grid.Column="4" Content="Lock All (Idle)" Style="{StaticResource GhostButton}"
                                 Margin="0,0,8,0" Click="LockAll_Click" />
-                        <Button Grid.Column="4" Content="Web Dashboard" Style="{StaticResource GhostButton}"
+                        <Button Grid.Column="5" Content="Web Dashboard" Style="{StaticResource GhostButton}"
                                 Click="OpenWebDashboard_Click" />
                     </Grid>
                 </Border>
@@ -629,63 +632,105 @@
                     <StackPanel MaxWidth="850" HorizontalAlignment="Left" Margin="32,24">
                         <TextBlock Text="Venue Configuration &amp; Settings" Style="{StaticResource DisplayHeading}" />
 
-                        <!-- Core Venue Settings -->
-                        <TextBlock Text="VENUE PREFERENCES" Style="{StaticResource CapsLabel}" Margin="0,20,0,8" />
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="16" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="VENUE NAME" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                <TextBox x:Name="SettingsVenueName" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="CURRENCY SYMBOL" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                <TextBox x:Name="SettingsCurrencySymbol" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                        <Grid>
+                            <TextBlock Text="Master System Configuration &amp; Policies" Style="{StaticResource DisplayHeading}" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Save Configuration (F9)" Style="{StaticResource GoldButton}" Click="SaveMasterConfig_Click" />
+                                <Button Content="Reset All to Defaults…" Style="{StaticResource GhostButton}" Margin="10,0,0,0" Click="ResetAllConfig_Click" />
                             </StackPanel>
                         </Grid>
+                        <TextBlock x:Name="ConfigMetaText" Text="SCHEMA: 1.0.0 · WAL ATOMIC WRITES · SHA-256 AUDIT LOGGING ENABLED" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GoldBrush}" Margin="0,4,0,16" />
 
-                        <Grid Margin="0,0,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="16" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="16" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="OPENING FLOAT" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                <TextBox x:Name="SettingsFloat" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="TAX RATE (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                <TextBox x:Name="SettingsTax" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="PRINT COST / PAGE" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                <TextBox x:Name="SettingsPrintCost" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- Hardware Monitoring, Display Enforcer & Diskless Integrity -->
-                        <TextBlock Text="HARDWARE WATCHDOG, DISPLAY &amp; DISKLESS POLICIES" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,8,0,8" />
-                        <Border Background="{StaticResource RaisedBrush}" Padding="16,12" Margin="0,0,0,16" CornerRadius="4">
+                        <!-- 1. RACK & TERMINAL POLICIES -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
                             <StackPanel>
-                                <CheckBox x:Name="SettingsHardwareWatchdog" Content="Enable Hardware Anti-Theft Watchdog (Alerts front desk immediately on RAM/GPU/Disk/USB swap)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
-                                <CheckBox x:Name="SettingsEnforceRefreshRate" Content="Auto-Enforce Native High Refresh Rate (240Hz/360Hz) on session start" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
-                                <CheckBox x:Name="SettingsRebootOnEnd" Content="Reboot Terminal on Session End (Clean wipe &amp; cache preservation)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,12" />
-                                
-                                <Grid Margin="0,4,0,0">
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="1. RACK &amp; TERMINAL POLICIES" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="rack" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="16" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
+                                        <TextBlock Text="INACTIVITY STANDBY (MINUTES)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgInactivityMinutes" Text="10" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="STANDBY POWER MODE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="CfgInactivityMode" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="Sleep" IsSelected="True" />
+                                            <ComboBoxItem Content="Hibernate" />
+                                            <ComboBoxItem Content="Shutdown" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="USB STORAGE POLICY" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="CfgUsbStoragePolicy" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="WhitelistHidOnly" IsSelected="True" />
+                                            <ComboBoxItem Content="BlockMassStorage" />
+                                            <ComboBoxItem Content="AllowAll" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+
+                                <CheckBox x:Name="CfgEnableInactivityStandby" Content="Enable Inactivity Deep Sleep / Standby Watchdog (Saves energy on unrented rigs)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,8" />
+                                <CheckBox x:Name="CfgAutoKillProhibited" Content="Auto-Kill Prohibited Cheat / Hack Processes on Sight" Foreground="{StaticResource InkBrush}" Margin="0,0,0,8" />
+
+                                <TextBlock Text="PROHIBITED PROCESSES KILL-LIST (CSV)" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,4,0,0" />
+                                <TextBox x:Name="CfgProhibitedCsv" Text="cheatengine,cheatengine-x86_64,artmoney,speedhack,wireshark,processhacker" Style="{StaticResource AppTextBox}" Margin="0,4,0,10" />
+
+                                <TextBlock Text="LOW-LEVEL KIOSK SHELL LOCKS" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,4,0,4" />
+                                <WrapPanel Margin="0,0,0,6">
+                                    <CheckBox x:Name="CfgBlockWinKey" Content="Block Windows Key" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgBlockAltTab" Content="Block Alt+Tab" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgBlockCtrlShiftEsc" Content="Block Ctrl+Shift+Esc" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgBlockTaskMgr" Content="Block Task Manager" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 2. SESSION LIFECYCLE & PRIVACY SCRUBBERS -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="2. SESSION LIFECYCLE &amp; PRIVACY SCRUBBERS" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="privacy" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <WrapPanel Margin="0,0,0,8">
+                                    <CheckBox x:Name="CfgKillUserProcesses" Content="Kill User Processes on End" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgClearBrowserCaches" Content="Clear Chrome/Edge Browser Caches" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgWipeDownloadsDesktop" Content="Wipe Downloads &amp; Desktop Files" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgResetVolume" Content="Reset Master Volume" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgResetMouse" Content="Reset Mouse Sensitivity to Default" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" IsChecked="True" />
+                                    <CheckBox x:Name="CfgRebootRestoreOnEnd" Content="Reboot-to-Restore on Session End" Foreground="{StaticResource InkBrush}" Margin="0,0,16,6" />
+                                </WrapPanel>
+
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="OFFLINE GRACE PERIOD (SEC)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgGracePeriodSec" Text="180" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="EXTENSION WARNING (MIN)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgWarningMinutes" Text="5" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
                                         <TextBlock Text="DISKLESS / RESTORE SYSTEM" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                        <ComboBox x:Name="SettingsDisklessProvider" Margin="0,4,0,0" FontSize="11">
+                                        <ComboBox x:Name="CfgDisklessProvider" Margin="0,4,0,0" FontSize="11">
                                             <ComboBoxItem Content="None" IsSelected="True" />
                                             <ComboBoxItem Content="DeepFreeze" />
                                             <ComboBoxItem Content="ShadowDefender" />
@@ -693,15 +738,259 @@
                                             <ComboBoxItem Content="iCafeCloud" />
                                         </ComboBox>
                                     </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 3. DYNAMIC TARIFF & BILLING ENGINE -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="3. DYNAMIC TARIFF &amp; BILLING ENGINE" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="tariff" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="MINIMUM SESSION CHARGE ($)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgMinSessionCharge" Text="1.00" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="OFFLINE GRACE PERIOD (SECONDS)" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                        <TextBox x:Name="SettingsGracePeriod" Text="180" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                        <TextBlock Text="CURRENCY ROUNDING RULE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="CfgRoundingRule" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="None" IsSelected="True" />
+                                            <ComboBoxItem Content="NearestOne" />
+                                            <ComboBoxItem Content="NearestFive" />
+                                            <ComboBoxItem Content="NearestTen" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="FIXED WINDOW PASSES" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <CheckBox x:Name="CfgFixedWindowPasses" Content="Enable Time Passes" Foreground="{StaticResource InkBrush}" Margin="0,8,0,0" IsChecked="True" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <CheckBox x:Name="CfgDynamicOccupancy" Content="Enable Dynamic Occupancy Multipliers (Discount off-peak / Surcharge peak occupancy)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="LOW THRESHOLD (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgOccLowThresh" Text="30" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="DISCOUNT (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgOccDiscount" Text="10" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="HIGH THRESHOLD (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgOccHighThresh" Text="85" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="SURCHARGE (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgOccSurcharge" Text="15" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
                                     </StackPanel>
                                 </Grid>
                             </StackPanel>
                         </Border>
 
-                        <Button Content="Save Venue Settings" Style="{StaticResource GoldButton}" HorizontalAlignment="Left" Click="SaveSettings_Click" />
+                        <!-- 4. RETAIL POS, KITCHEN & RECEIPTS (ESC/POS) -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="4. RETAIL POS, KITCHEN &amp; ESC/POS THERMAL RECEIPTS" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="pos" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="VENUE NAME" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgVenueName" Text="ZixCafe Arena" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="CURRENCY SYMBOL" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgCurrencySymbol" Text="$" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="CURRENCY CODE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgCurrencyCode" Text="USD" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="DECIMAL PLACES" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgDecimalPlaces" Text="2" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="TAX LABEL" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgTaxLabel" Text="TAX" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="TAX RATE (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgTaxRate" Text="0.00" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="OPENING FLOAT ($)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgOpeningFloat" Text="50.00" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="RECEIPT HEADER TEXT (ESC/POS)" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,4,0,0" />
+                                <TextBox x:Name="CfgReceiptHeader" Text="ZIXCAFE PRO ESPORTS LOUNGE&#x0a;High-Performance Gaming &amp; VR" AcceptsReturn="True" Height="44" Style="{StaticResource AppTextBox}" Margin="0,4,0,10" />
+
+                                <TextBlock Text="RECEIPT FOOTER NOTES (ESC/POS)" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,4,0,0" />
+                                <TextBox x:Name="CfgReceiptFooter" Text="Thank you for gaming with us!&#x0a;Visit again soon. zixcafe.gg" AcceptsReturn="True" Height="44" Style="{StaticResource AppTextBox}" Margin="0,4,0,10" />
+
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="2*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="PRINTER WIDTH" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="CfgPrinterWidth" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="80mm" IsSelected="True" />
+                                            <ComboBoxItem Content="58mm" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="CASH DRAWER KICK PULSE CODES" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgDrawerPulse" Text="27,112,0,25,250" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                                <CheckBox x:Name="CfgMandatoryLoanReturn" Content="Enforce Mandatory Hardware Loan Return on Checkout" Foreground="{StaticResource InkBrush}" Margin="0,4,0,0" IsChecked="True" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 5. RBAC & STAFF GOVERNANCE -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="5. RBAC &amp; SUPERVISOR PIN GOVERNANCE" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="rbac" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <WrapPanel Margin="0,0,0,6">
+                                    <CheckBox x:Name="CfgPinManualTime" Content="Require Supervisor PIN for Manual Time Add" Foreground="{StaticResource InkBrush}" Margin="0,0,16,8" IsChecked="True" />
+                                    <CheckBox x:Name="CfgPinBillVoid" Content="Require Supervisor PIN for Bill Void" Foreground="{StaticResource InkBrush}" Margin="0,0,16,8" IsChecked="True" />
+                                    <CheckBox x:Name="CfgPinDrawerKick" Content="Require Supervisor PIN for Manual Drawer Kick" Foreground="{StaticResource InkBrush}" Margin="0,0,16,8" IsChecked="True" />
+                                    <CheckBox x:Name="CfgPinStockAdjust" Content="Require Supervisor PIN for Stock Adjustments" Foreground="{StaticResource InkBrush}" Margin="0,0,16,8" IsChecked="True" />
+                                    <CheckBox x:Name="CfgBlindDrawerClose" Content="Enforce Blind Cash Drawer Close (Hides expected total from cashier during Z-Count)" Foreground="{StaticResource InkBrush}" Margin="0,0,16,8" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 6. NETWORK, ROUTER & ENERGY / IOT INTEGRATION -->
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="6. NETWORK, MIKROTIK ROUTEROS &amp; SMART RELAY / IOT INTEGRATION" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource GoldBrush}" />
+                                    <Button Content="Reset Category" Style="{StaticResource GhostButton}" FontSize="10" Padding="8,2" HorizontalAlignment="Right" Tag="network" Click="ResetCategoryConfig_Click" />
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="SIGNALR SERVER PORT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgSignalRPort" Text="40000" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="WOL BROADCAST SUBNET" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgWolSubnet" Text="255.255.255.255" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="WOL PORT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgWolPort" Text="9" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="ROUTER TYPE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="CfgRouterType" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="None" IsSelected="True" />
+                                            <ComboBoxItem Content="MikroTik" />
+                                            <ComboBoxItem Content="OpenWrt" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="ROUTER IP ADDRESS" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgRouterIp" Text="192.168.1.1" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="BANDWIDTH LIMIT (MBPS)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgBandwidthLimit" Text="50" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="MQTT BROKER HOST" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgMqttHost" Text="localhost" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="MQTT PORT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgMqttPort" Text="1883" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="MQTT USERNAME" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="CfgMqttUser" Text="" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
 
                         <!-- Database Backup & Data Care -->
                         <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />
@@ -860,6 +1149,7 @@
                             <Button x:Name="PauseResumeButton" Content="Pause (F3)" Style="{StaticResource GhostButton}" Click="PauseResume_Click" />
                             <Button x:Name="EndSessionButton" Grid.Column="2" Content="End (F4)" Style="{StaticResource GoldButton}" Click="EndSession_Click" />
                         </Grid>
+                        <Button x:Name="SwitchStationButton" Content="Switch Station…" Style="{StaticResource GhostButton}" Margin="0,6,0,0" Click="SwitchStation_Click" />
                     </StackPanel>
 
                     <!-- Remote & Hardware Ops -->
@@ -882,6 +1172,15 @@
                             </Grid.ColumnDefinitions>
                             <Button Content="Maintenance…" Style="{StaticResource GhostButton}" Click="ToggleMaintenance_Click" />
                             <Button Grid.Column="2" Content="Reserve…" Style="{StaticResource GhostButton}" Click="ReserveTerminal_Click" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Wake (WoL)" Style="{StaticResource GhostButton}" Click="WakeWoL_Click" />
+                            <Button Grid.Column="2" Content="Power Relay" Style="{StaticResource GhostButton}" Click="TogglePowerRelay_Click" />
                         </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>

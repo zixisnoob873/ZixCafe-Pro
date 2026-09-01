@@ -6,6 +6,26 @@
 
 ## 🏆 Key Feature Modules
 
+### ⚡ Energy & Hardware Automation
+- **Wake-on-LAN (WoL)**: One-click magic packet broadcasting to wake up individual terminal rigs or entire floor banks/zones upon shift opening or booking check-in.
+- **Scheduled Inactivity Standby**: Intelligent background watchdog auto-triggers configurable deep sleep, hibernation, or shutdown on idle, unrented rigs after 5–10 minutes of inactivity to cut power overhead.
+- **Smart Relay & IoT Power Integration**: Integrated REST and MQTT power switching for smart plugs/relays (**Shelly**, **Sonoff**, **Tasmota**, **MQTT Brokers**) to synchronize power for non-PC stations (PS5/Xbox, VR bays, racing sims) directly with session billing timers.
+
+### 🔀 Counter & Desk Workflows
+- **One-Click Station Switch**: Seamlessly transfers an active prepaid/postpaid session, running countdown timer, snack/drink orders, member/voucher context, and IoT relay states from one terminal to another without stopping the clock or manually recalculating charges.
+
+### ⚙️ Server-Side Master Configuration Engine
+- **Zero-Code Runtime Configuration**: Comprehensive Admin configuration engine across 6 functional domains:
+  1. *Rack & Terminal Policies* (Inactivity standby, prohibited processes, USB whitelist, native refresh rate, shell lock restrictions).
+  2. *Session Lifecycle & Privacy Scrubbers* (Process termination, browser cache cleanup, downloads/desktop wiping, audio/mouse speed reset, offline grace period, diskless reboot).
+  3. *Dynamic Tariff & Billing Engine* (Minimum session charge, rounding rules, fixed-window passes, occupancy multipliers).
+  4. *Retail POS & Receipt Customization* (Branding, ESC/POS receipt header/footer, printer width, cash drawer kick pulse codes, loan returns).
+  5. *RBAC & Staff Governance* (Supervisor PIN requirements for time addition, bill void, drawer kick, stock adjustments, blind cash close).
+  6. *Network & IoT Infrastructure* (SignalR port, MikroTik router integration, WoL broadcast subnet/port, MQTT broker settings, automated backups).
+- **Real-Time Dynamic Hot-Reload**: Configuration changes are broadcast live via SignalR to connected terminal agents, immediately applying policies without agent restarts.
+- **Category & Global Factory Reset**: One-click reset for individual categories or all system settings to verified defaults.
+- **Cryptographic Audit Accountability**: Every configuration change is hashed into the SHA-256 tamper-evident audit chain with cashier attribution.
+
 ### 🖥️ Hardware Integrity & Anti-Theft Watchdog
 - **Hardware Asset Baseline**: Automatic hardware discovery on client boot logging CPU ID, GPU Device ID, RAM module capacities and serials, NVMe/SSD volume serials, and attached USB gaming peripherals.
 - **Anti-Theft Real-Time Alerts**: Flags RAM module extraction, GPU swapping, storage tampering, or disconnected gaming peripherals (mice, mechanical keyboards, esports headsets) and raises immediate Critical/Warning alerts at the server studio with cryptographic audit logging.
@@ -47,7 +67,7 @@
 | Metric | Status / Value |
 |---|---|
 | **Solution Projects** | 7/7 projects compile with **0 errors** (`net10.0` / `net10.0-windows`) |
-| **Automated Unit Tests** | **31/31 Passing (100%)** |
+| **Automated Unit Tests** | **55/55 Passing (100%)** |
 | **Database Engine** | SQLite in **Write-Ahead Logging (WAL)** mode with foreign key enforcement |
 | **Cryptographic Integrity** | 100% SHA-256 linked audit verification across all transactions |
 | **LAN Port** | 40000 (Kestrel HTTP & SignalR Hubs) |

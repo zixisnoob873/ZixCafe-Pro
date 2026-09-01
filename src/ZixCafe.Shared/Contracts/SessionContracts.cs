@@ -57,4 +57,8 @@ public record FindMemberResponse(bool Ok, string? Error, MemberDto? Member);
 
 public record AddLineResponse(bool Ok, string? Error, decimal ExtrasTotal);
 
-public record ResultResponse(bool Ok, string? Error);
+public record ResultResponse(bool Ok, string? Error)
+{
+    public static ResultResponse Success(string? message = null) => new(true, message);
+    public static ResultResponse Fail(string error) => new(false, error);
+}

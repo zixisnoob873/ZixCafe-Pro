@@ -129,6 +129,13 @@ public class SessionService
         terminal.Status = TerminalStatus.InUse;
         terminal.IsLocked = false;
 
+        // Smart Relay trigger: Power ON non-PC / IoT station
+        if (!string.IsNullOrWhiteSpace(terminal.RelayAddress) && terminal.RelayType != "None")
+        {
+            _ = SmartRelayController.SendPowerCommandAsync(
+                new SmartRelayCommand(terminal.RelayType ?? "Shelly", terminal.RelayAddress, terminal.RelayChannel, true));
+        }
+
         await db.SaveChangesAsync();
         await tx.CommitAsync();
 
@@ -236,6 +243,13 @@ public class SessionService
         session.Terminal.Status = TerminalStatus.Available;
         session.Terminal.IsLocked = true;
 
+        // Smart Relay trigger: Power OFF non-PC / IoT station
+        if (!string.IsNullOrWhiteSpace(session.Terminal.RelayAddress) && session.Terminal.RelayType != "None")
+        {
+            _ = SmartRelayController.SendPowerCommandAsync(
+                new SmartRelayCommand(session.Terminal.RelayType ?? "Shelly", session.Terminal.RelayAddress, session.Terminal.RelayChannel, false));
+        }
+
         await AppendAuditAsync(db, reason == "time_up" ? "session.auto_end" : "session.end",
             session.Id.ToString(), $"total={total:F2} time={timeCharge:F2}", request.CashierName);
 
@@ -251,6 +265,110 @@ public class SessionService
         return new EndSessionResponse(
             true, null, timeCharge, extras, total,
             session.Lines.Select(l => new LineDto(l.Kind.ToString(), l.Description, l.Quantity, l.UnitAmount, l.Amount)).ToList());
+    }
+
+    public async Task<ResultResponse> SwitchStationAsync(SwitchStationRequest request)
+    {
+        if (request.SourceTerminalId == request.TargetTerminalId)
+        {
+            return ResultResponse.Fail("Source and target stations cannot be the same.");
+        }
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        await using var tx = await db.Database.BeginTransactionAsync();
+
+        var sourceTerminal = await db.Terminals.FirstOrDefaultAsync(t => t.Id == request.SourceTerminalId);
+        if (sourceTerminal is null)
+        {
+            return ResultResponse.Fail("Source station not found.");
+        }
+
+        var targetTerminal = await db.Terminals.FirstOrDefaultAsync(t => t.Id == request.TargetTerminalId);
+        if (targetTerminal is null)
+        {
+            return ResultResponse.Fail("Target station not found.");
+        }
+
+        if (targetTerminal.Status == TerminalStatus.Maintenance)
+        {
+            return ResultResponse.Fail($"Target station '{targetTerminal.Name}' is in maintenance mode.");
+        }
+
+        var sourceSession = await db.Sessions
+            .Include(s => s.Lines)
+            .Include(s => s.Tariff).ThenInclude(t => t!.Rules)
+            .FirstOrDefaultAsync(s => s.TerminalId == request.SourceTerminalId &&
+                (s.Status == SessionStatus.Active || s.Status == SessionStatus.Paused));
+
+        if (sourceSession is null)
+        {
+            return ResultResponse.Fail($"No active session found on source station '{sourceTerminal.Name}'.");
+        }
+
+        var targetActiveSession = await db.Sessions
+            .FirstOrDefaultAsync(s => s.TerminalId == request.TargetTerminalId &&
+                (s.Status == SessionStatus.Active || s.Status == SessionStatus.Paused));
+
+        if (targetActiveSession is not null)
+        {
+            return ResultResponse.Fail($"Target station '{targetTerminal.Name}' already has an active session.");
+        }
+
+        // Reassign session to target terminal
+        sourceSession.TerminalId = targetTerminal.Id;
+
+        // Update terminal statuses
+        sourceTerminal.Status = TerminalStatus.Available;
+        sourceTerminal.IsLocked = true;
+
+        targetTerminal.Status = sourceSession.Status == SessionStatus.Active ? TerminalStatus.InUse : TerminalStatus.Locked;
+        targetTerminal.IsLocked = false;
+
+        // Smart Relay coordination
+        if (!string.IsNullOrWhiteSpace(sourceTerminal.RelayAddress) && sourceTerminal.RelayType != "None")
+        {
+            _ = SmartRelayController.SendPowerCommandAsync(
+                new SmartRelayCommand(sourceTerminal.RelayType ?? "Shelly", sourceTerminal.RelayAddress, sourceTerminal.RelayChannel, false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(targetTerminal.RelayAddress) && targetTerminal.RelayType != "None")
+        {
+            _ = SmartRelayController.SendPowerCommandAsync(
+                new SmartRelayCommand(targetTerminal.RelayType ?? "Shelly", targetTerminal.RelayAddress, targetTerminal.RelayChannel, true));
+        }
+
+        // Audit Trail entry
+        await AppendAuditAsync(db, "session.switch_station",
+            sourceSession.Id.ToString(),
+            $"Switched from '{sourceTerminal.Name}' to '{targetTerminal.Name}'. Reason: {request.Reason ?? "Guest request"}",
+            request.CashierName);
+
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        // 1. Notify source terminal to lock and scrub
+        await _terminals.Clients.Group(TerminalGroups.Terminal(sourceTerminal.Id)).SessionEnded(
+            $"Switched to {targetTerminal.Name}", DateTime.UtcNow);
+        await _terminals.Clients.Group(TerminalGroups.Terminal(sourceTerminal.Id)).ShowLockScreen(DateTime.UtcNow);
+
+        // 2. Notify target terminal to unlock with active session state
+        string? memberName = null;
+        if (sourceSession.MemberId is { } mid)
+        {
+            memberName = (await db.Members.AsNoTracking().FirstOrDefaultAsync(m => m.Id == mid))?.Name;
+        }
+
+        int? minutesGranted = sourceSession.PlannedEndAt is { } end ? (int)((end - DateTime.UtcNow).TotalMinutes) : null;
+        await _terminals.Clients.Group(TerminalGroups.Terminal(targetTerminal.Id)).SessionStarted(
+            sourceSession.Id, sourceSession.Mode.ToString().ToLowerInvariant(), minutesGranted, sourceSession.PlannedEndAt, memberName);
+        await _terminals.Clients.Group(TerminalGroups.Terminal(targetTerminal.Id)).TimeSync(
+            DateTime.UtcNow, sourceSession.PlannedEndAt, 0m);
+
+        // 3. Broadcast updated states to studio dashboard
+        await BroadcastStateAsync(sourceTerminal.Id);
+        await BroadcastStateAsync(targetTerminal.Id);
+
+        return ResultResponse.Success($"Successfully transferred active session from '{sourceTerminal.Name}' to '{targetTerminal.Name}'.");
     }
 
     public async Task<Session?> GetActiveAsync(Guid terminalId)

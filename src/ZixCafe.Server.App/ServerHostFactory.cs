@@ -51,11 +51,14 @@ public static class ServerHostFactory
         builder.Services.AddSingleton<DataCareAndBackupService>();
         builder.Services.AddSingleton<HardwareIntegrityService>();
         builder.Services.AddSingleton<LicenseService>();
+        builder.Services.AddSingleton<MasterConfigurationService>();
+        builder.Services.AddSingleton<EnergyAndIoTHostService>();
 
         // Background services
         builder.Services.AddSingleton<RackBroadcaster>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<RackBroadcaster>());
         builder.Services.AddHostedService<SessionMonitor>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<EnergyAndIoTHostService>());
 
         builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 

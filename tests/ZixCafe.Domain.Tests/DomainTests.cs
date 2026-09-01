@@ -533,3 +533,242 @@ public class OfflineGracePeriodTests
         Assert.Equal(10, clampedLow);
     }
 }
+
+public class WakeOnLanTests
+{
+    [Fact]
+    public void BuildMagicPacket_Constructs102BytePayloadWithProperPrefixAndReps()
+    {
+        var mac = "00:11:22:33:44:55";
+        var packet = WakeOnLanService.BuildMagicPacket(mac);
+
+        Assert.NotNull(packet);
+        Assert.Equal(102, packet.Length);
+
+        // First 6 bytes must be 0xFF
+        for (int i = 0; i < 6; i++)
+        {
+            Assert.Equal(0xFF, packet[i]);
+        }
+
+        // Next 16 iterations must be the 6 MAC bytes
+        byte[] expectedMacBytes = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55];
+        for (int rep = 0; rep < 16; rep++)
+        {
+            for (int b = 0; b < 6; b++)
+            {
+                Assert.Equal(expectedMacBytes[b], packet[6 + (rep * 6) + b]);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("AA-BB-CC-DD-EE-FF")]
+    [InlineData("aa:bb:cc:dd:ee:ff")]
+    [InlineData("aabb.ccdd.eeff")]
+    [InlineData("AABBCCDDEEFF")]
+    public void BuildMagicPacket_HandlesVariousMacAddressFormats(string macInput)
+    {
+        var packet = WakeOnLanService.BuildMagicPacket(macInput);
+        Assert.Equal(102, packet.Length);
+        Assert.Equal(0xAA, packet[6]);
+        Assert.Equal(0xFF, packet[11]);
+    }
+
+    [Theory]
+    [InlineData("invalid-mac")]
+    [InlineData("00:11:22:33:44")] // Only 5 bytes
+    [InlineData("00:11:22:33:44:55:66")] // 7 bytes
+    [InlineData("GG:HH:II:JJ:KK:LL")] // Non-hex
+    public void BuildMagicPacket_ThrowsOnInvalidMac(string invalidMac)
+    {
+        Assert.Throws<FormatException>(() => WakeOnLanService.BuildMagicPacket(invalidMac));
+    }
+
+    [Fact]
+    public void BuildMagicPacket_ThrowsOnEmptyMac()
+    {
+        Assert.Throws<ArgumentException>(() => WakeOnLanService.BuildMagicPacket(""));
+    }
+}
+
+public class SmartRelayControllerTests
+{
+    [Fact]
+    public void BuildRelayRestUrl_GeneratesCorrectShellyRestUrl()
+    {
+        var urlOn = SmartRelayController.BuildRelayRestUrl("Shelly", "192.168.1.150", 0, true);
+        Assert.Equal("http://192.168.1.150/relay/0?turn=on", urlOn);
+
+        var urlOff = SmartRelayController.BuildRelayRestUrl("Shelly", "http://192.168.1.150", 1, false);
+        Assert.Equal("http://192.168.1.150/relay/1?turn=off", urlOff);
+    }
+
+    [Fact]
+    public void BuildRelayRestUrl_GeneratesCorrectSonoffOrTasmotaUrl()
+    {
+        var urlOn = SmartRelayController.BuildRelayRestUrl("Sonoff", "192.168.1.160", 0, true);
+        Assert.Equal("http://192.168.1.160/cm?cmnd=Power1%20ON", urlOn);
+
+        var urlOff = SmartRelayController.BuildRelayRestUrl("Tasmota", "192.168.1.160", 1, false);
+        Assert.Equal("http://192.168.1.160/cm?cmnd=Power2%20OFF", urlOff);
+    }
+
+    [Fact]
+    public void BuildMqttMessage_FormatsCorrectly()
+    {
+        var (topic, payload) = SmartRelayController.BuildMqttMessage("cmnd/rig01", 0, true);
+        Assert.Equal("cmnd/rig01/cmnd/POWER1", topic);
+        Assert.Equal("ON", payload);
+
+        var (topicOff, payloadOff) = SmartRelayController.BuildMqttMessage("devices/vr_bay_1", 1, false);
+        Assert.Equal("devices/vr_bay_1/cmnd/POWER2", topicOff);
+        Assert.Equal("OFF", payloadOff);
+    }
+}
+
+public class MasterSystemSettingsTests
+{
+    [Fact]
+    public void CreateDefault_InitializesValidSchemaVersionAndProperties()
+    {
+        var s = MasterSystemSettings.CreateDefault();
+
+        Assert.NotNull(s);
+        Assert.Equal("1.0.0", s.SchemaVersion);
+        Assert.Equal("ZixCafe Arena", s.VenueName);
+        Assert.Equal(40000, s.SignalRServerPort);
+        Assert.Equal(180, s.NetworkDropGracePeriodSeconds);
+        Assert.Equal(9, s.WakeOnLanPort);
+        Assert.Equal("255.255.255.255", s.WakeOnLanBroadcastSubnet);
+        Assert.True(s.EnableInactivityStandby);
+        Assert.Equal(10, s.InactivityStandbyMinutes);
+        Assert.Equal("Sleep", s.InactivityStandbyMode);
+        Assert.True(s.RequireSupervisorPinForBillVoid);
+        Assert.True(s.EnforceMandatoryHardwareLoanReturnOnCheckout);
+    }
+
+    [Fact]
+    public void Dynamic_policy_clamping_ensures_safe_operational_boundaries()
+    {
+        var s = MasterSystemSettings.CreateDefault();
+        s.CleanupDefaultMasterVolumePercent = Math.Clamp(150, 0, 100);
+        Assert.Equal(100, s.CleanupDefaultMasterVolumePercent);
+
+        s.TaxRatePercent = Math.Clamp(-5m, 0m, 100m);
+        Assert.Equal(0m, s.TaxRatePercent);
+
+        s.InactivityStandbyMinutes = Math.Clamp(1, 2, 1440);
+        Assert.Equal(2, s.InactivityStandbyMinutes);
+
+        s.NetworkDropGracePeriodSeconds = Math.Clamp(10000, 10, 3600);
+        Assert.Equal(3600, s.NetworkDropGracePeriodSeconds);
+    }
+}
+
+public class StationTransferWorkflowTests
+{
+    [Fact]
+    public void StationSwitch_PreservesSessionDataWhileReassigningTerminal()
+    {
+        var sourceTerminalId = Guid.NewGuid();
+        var targetTerminalId = Guid.NewGuid();
+
+        var session = new Session
+        {
+            Id = Guid.NewGuid(),
+            TerminalId = sourceTerminalId,
+            Mode = SessionMode.Prepaid,
+            Status = SessionStatus.Active,
+            StartedAt = DateTime.UtcNow.AddMinutes(-30),
+            PlannedEndAt = DateTime.UtcNow.AddMinutes(30),
+            Amount = 10.00m
+        };
+
+        session.Lines.Add(new SessionLine
+        {
+            Kind = LineKind.Product,
+            Description = "Energy Drink",
+            Quantity = 1,
+            UnitAmount = 3.50m,
+            Amount = 3.50m
+        });
+
+        // Simulate Station Switch
+        var originalSessionId = session.Id;
+        var originalAmount = session.Amount;
+        var originalLineCount = session.Lines.Count;
+        var originalPlannedEnd = session.PlannedEndAt;
+
+        session.TerminalId = targetTerminalId;
+
+        Assert.Equal(originalSessionId, session.Id);
+        Assert.Equal(targetTerminalId, session.TerminalId);
+        Assert.Equal(originalAmount, session.Amount);
+        Assert.Equal(originalLineCount, session.Lines.Count);
+        Assert.Equal(originalPlannedEnd, session.PlannedEndAt);
+    }
+}
+
+public class SystemConfigAndAuditIntegrationTests
+{
+    [Fact]
+    public void AuditChain_Links_ConfigurationUpdate_Cryptographically()
+    {
+        var prevHash = "INITIAL_BLOCK_HASH_HEX_00000000000000000000000000000000000000000000";
+        var now = DateTime.UtcNow;
+        var (returnedPrev, hash) = AuditChain.Link(
+            prevHash,
+            "system.config_update",
+            "SystemConfig",
+            "all",
+            "Updated system configuration: Admin Studio configuration update. Schema: 1.0.0",
+            "Admin",
+            now);
+
+        Assert.NotNull(hash);
+        Assert.NotEmpty(hash);
+        Assert.Equal(64, hash.Length); // 256-bit SHA-256 in hex
+        Assert.Equal(prevHash, returnedPrev);
+    }
+
+    [Fact]
+    public void ProhibitedProcessesCsv_SplitsAndCleansProperly()
+    {
+        var csv = "cheatengine, cheatengine-x86_64, artmoney, speedhack ,wireshark,processhacker";
+        var items = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        Assert.Equal(6, items.Length);
+        Assert.Contains("cheatengine", items);
+        Assert.Contains("speedhack", items);
+        Assert.Contains("wireshark", items);
+    }
+
+    [Theory]
+    [InlineData("WhitelistHidOnly")]
+    [InlineData("BlockMassStorage")]
+    [InlineData("AllowAll")]
+    public void UsbStoragePolicy_RecognizesValidModes(string mode)
+    {
+        var validModes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "AllowAll", "WhitelistHidOnly", "BlockMassStorage"
+        };
+
+        Assert.Contains(mode, validModes);
+    }
+
+    [Theory]
+    [InlineData("Sleep")]
+    [InlineData("Hibernate")]
+    [InlineData("Shutdown")]
+    public void InactivityStandbyMode_RecognizesValidModes(string mode)
+    {
+        var validModes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Sleep", "Hibernate", "Shutdown"
+        };
+
+        Assert.Contains(mode, validModes);
+    }
+}

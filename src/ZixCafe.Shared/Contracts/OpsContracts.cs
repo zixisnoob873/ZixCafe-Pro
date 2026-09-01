@@ -433,3 +433,95 @@ public record HardwareBaselineDto(
     IReadOnlyList<string> UsbDevices,
     DateTime EstablishedAtUtc,
     DateTime LastVerifiedAtUtc);
+
+public record SwitchStationRequest(
+    Guid SourceTerminalId,
+    Guid TargetTerminalId,
+    string CashierName,
+    string? Reason);
+
+public record WakeOnLanRequest(
+    Guid? TerminalId,
+    Guid? ZoneId,
+    string? TargetMacAddress);
+
+public record SmartRelayTriggerRequest(
+    Guid TerminalId,
+    bool PowerOn,
+    string CashierName);
+
+public record MasterSystemSettingsDto(
+    // Meta
+    string SchemaVersion,
+    DateTime LastUpdatedAtUtc,
+    string LastUpdatedBy,
+    // 1. Rack & Terminal Policies
+    int InactivityStandbyMinutes,
+    bool EnableInactivityStandby,
+    string InactivityStandbyMode,
+    string ProhibitedProcessesCsv,
+    bool AutoKillProhibitedProcesses,
+    string UsbStoragePolicy,
+    bool EnforceNativeDisplayRefreshRate,
+    int TargetRefreshRateHz,
+    bool ShellLockBlockWinKey,
+    bool ShellLockBlockAltTab,
+    bool ShellLockBlockCtrlShiftEsc,
+    bool ShellLockBlockTaskManager,
+    // 2. Session Lifecycle & Privacy Scrubbers
+    bool CleanupKillUserProcessesOnSessionEnd,
+    bool CleanupClearBrowserCachesOnSessionEnd,
+    bool CleanupWipeDownloadsAndDesktop,
+    bool CleanupResetMasterVolume,
+    int CleanupDefaultMasterVolumePercent,
+    bool CleanupResetMouseSensitivity,
+    int NetworkDropGracePeriodSeconds,
+    int SessionExtensionWarningMinutes,
+    bool EnableRebootToRestoreOnSessionEnd,
+    string DisklessProvider,
+    // 3. Dynamic Tariff & Billing Engine
+    decimal MinimumSessionCharge,
+    string CurrencyRoundingRule,
+    bool EnableFixedWindowPasses,
+    bool EnableDynamicOccupancyMultipliers,
+    decimal LowOccupancyDiscountPercent,
+    decimal HighOccupancySurchargePercent,
+    int OccupancyLowThresholdPercent,
+    int OccupancyHighThresholdPercent,
+    // 4. Retail POS, Kitchen & Receipts
+    string VenueName,
+    string CurrencyCode,
+    string CurrencySymbol,
+    string Locale,
+    int CurrencyDecimalPlaces,
+    string TaxLabel,
+    decimal TaxRatePercent,
+    decimal DefaultOpeningFloat,
+    string ReceiptHeaderText,
+    string ReceiptFooterNotes,
+    string ReceiptLogoPath,
+    int ReceiptPrinterWidthMm,
+    string CashDrawerKickPulseCode,
+    bool EnforceMandatoryHardwareLoanReturnOnCheckout,
+    // 5. RBAC & Staff Governance
+    bool RequireSupervisorPinForManualTimeAdd,
+    bool RequireSupervisorPinForBillVoid,
+    bool RequireSupervisorPinForManualDrawerKick,
+    bool RequireSupervisorPinForStockAdjustment,
+    bool EnforceBlindCashDrawerClose,
+    // 6. Network, Router & Energy / IoT Integration
+    int SignalRServerPort,
+    string WebDashboardBindUrl,
+    string RouterType,
+    string RouterIpAddress,
+    int RouterApiPort,
+    string RouterUsername,
+    int GuestDefaultBandwidthLimitMbps,
+    int WakeOnLanPort,
+    string WakeOnLanBroadcastSubnet,
+    string MqttBrokerAddress,
+    int MqttBrokerPort,
+    string MqttUsername,
+    string DatabaseAutoBackupPath,
+    int DatabaseAutoBackupIntervalHours,
+    int DatabaseBackupRetentionCount);

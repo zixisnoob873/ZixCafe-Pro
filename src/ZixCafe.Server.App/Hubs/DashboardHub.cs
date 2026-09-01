@@ -32,6 +32,8 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
     private readonly ChatHistoryService _chatHistory;
     private readonly DataCareAndBackupService _backup;
     private readonly HardwareIntegrityService _hardware;
+    private readonly MasterConfigurationService _masterConfig;
+    private readonly EnergyAndIoTHostService _energyIot;
 
     public DashboardHub(
         IDbContextFactory<ZixCafeDbContext> dbFactory,
@@ -53,7 +55,9 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
         MaintenanceAndReservationService maintenance,
         ChatHistoryService chatHistory,
         DataCareAndBackupService backup,
-        HardwareIntegrityService hardware)
+        HardwareIntegrityService hardware,
+        MasterConfigurationService masterConfig,
+        EnergyAndIoTHostService energyIot)
     {
         _dbFactory = dbFactory;
         _registry = registry;
@@ -75,6 +79,8 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
         _chatHistory = chatHistory;
         _backup = backup;
         _hardware = hardware;
+        _masterConfig = masterConfig;
+        _energyIot = energyIot;
     }
 
     public async Task SubscribeAsync()
@@ -409,4 +415,28 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
 
     public async Task<ResultResponse> TriggerDisklessWipeAsync(Guid terminalId, string requestingCashier)
         => await _hardware.TriggerDisklessWipeAsync(terminalId, requestingCashier);
+
+    // Counter & Desk Workflows
+    public async Task<ResultResponse> SwitchStationAsync(SwitchStationRequest req)
+        => await _sessions.SwitchStationAsync(req);
+
+    // Energy & IoT Automation
+    public async Task<ResultResponse> WakeTerminalAsync(Guid terminalId, string requestingCashier)
+        => await _energyIot.WakeTerminalAsync(terminalId, requestingCashier);
+
+    public async Task<ResultResponse> WakeAllTerminalsAsync(Guid? zoneId, string requestingCashier)
+        => await _energyIot.WakeAllTerminalsAsync(zoneId, requestingCashier);
+
+    public async Task<ResultResponse> TriggerSmartRelayAsync(SmartRelayTriggerRequest req)
+        => await _energyIot.TriggerSmartRelayAsync(req.TerminalId, req.PowerOn, req.CashierName);
+
+    // Master Configuration Engine
+    public async Task<MasterSystemSettingsDto> GetMasterSettingsAsync()
+        => await _masterConfig.GetSettingsDtoAsync();
+
+    public async Task<ResultResponse> SaveMasterSettingsAsync(MasterSystemSettingsDto settings, string reason, string cashierName)
+        => await _masterConfig.SaveSettingsDtoAsync(settings, reason, cashierName);
+
+    public async Task<MasterSystemSettingsDto> ResetSettingsCategoryAsync(string category, string cashierName)
+        => await _masterConfig.ResetCategoryAsync(category, cashierName);
 }

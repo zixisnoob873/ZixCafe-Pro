@@ -55,6 +55,16 @@ public class Terminal
 
     public string? DisplayResolution { get; set; }
 
+    public string? MacAddress { get; set; }
+
+    public string TerminalType { get; set; } = "PC"; // PC, Console, VR, RacingSim
+
+    public string? RelayAddress { get; set; }
+
+    public string? RelayType { get; set; } = "None"; // None, Shelly, Sonoff, Tasmota, MQTT
+
+    public int RelayChannel { get; set; } = 0;
+
     public DateTime? LastSeenAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -33,6 +33,7 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
     public DbSet<ChatEntry> ChatEntries => Set<ChatEntry>();
     public DbSet<AlertMute> AlertMutes => Set<AlertMute>();
     public DbSet<TerminalHardwareBaseline> HardwareBaselines => Set<TerminalHardwareBaseline>();
+    public DbSet<MasterSystemSettings> SystemSettings => Set<MasterSystemSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

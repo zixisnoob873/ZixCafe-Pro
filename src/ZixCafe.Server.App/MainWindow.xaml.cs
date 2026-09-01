@@ -506,6 +506,75 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void WakeAllWoL_Click(object sender, RoutedEventArgs e)
+    {
+        var confirm = MessageBox.Show(this, "Broadcast Wake-on-LAN magic packets to wake all terminals on the LAN?", "Wake All Terminals", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.WakeAllTerminalsAsync), (Guid?)null, _cashierName);
+        MessageBox.Show(this, res.Ok ? res.Error ?? "WoL magic packets sent." : res.Error, "Wake-on-LAN", MessageBoxButton.OK, res.Ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    private async void WakeWoL_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null) return;
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.WakeTerminalAsync), _selected.TerminalId, _cashierName);
+        MessageBox.Show(this, res.Ok ? res.Error ?? $"WoL magic packet sent to {_selected.Name}." : res.Error, "Wake-on-LAN", MessageBoxButton.OK, res.Ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    private async void TogglePowerRelay_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null) return;
+        var confirm = MessageBox.Show(this, $"Toggle smart relay power for '{_selected.Name}'?\n\nYes = Turn ON\nNo = Turn OFF\nCancel = Abort", "Smart Relay Control", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        if (confirm == MessageBoxResult.Cancel) return;
+
+        var powerOn = confirm == MessageBoxResult.Yes;
+        var req = new SmartRelayTriggerRequest(_selected.TerminalId, powerOn, _cashierName);
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.TriggerSmartRelayAsync), req);
+        MessageBox.Show(this, res.Ok ? res.Error ?? $"Power relay for {_selected.Name} set to {(powerOn ? "ON" : "OFF")}." : res.Error, "Smart Relay", MessageBoxButton.OK, res.Ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    private async void SwitchStation_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected?.ActiveSessionId is null)
+        {
+            MessageBox.Show(this, "Select a terminal with an active running session to transfer.", "Switch Station", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var available = _tiles.Where(t => t.TerminalId != _selected.TerminalId && t.Status == TerminalStatusDto.Available).ToList();
+        if (available.Count == 0)
+        {
+            MessageBox.Show(this, "No available destination stations found on the rack.", "Switch Station", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var stationNames = string.Join(", ", available.Select(a => a.Name));
+        var targetInput = PromptString("Switch Station / Transfer", $"Transfer active session from '{_selected.Name}' to which station?\n\nAvailable stations: {stationNames}\n\nEnter destination station name:");
+        if (string.IsNullOrWhiteSpace(targetInput)) return;
+
+        var target = available.FirstOrDefault(a => a.Name.Equals(targetInput.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (target is null)
+        {
+            MessageBox.Show(this, $"Station '{targetInput}' not found among available stations.", "Switch Station", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var reason = PromptString("Switch Station Reason", "Reason for switch (e.g. Guest requested VIP area):") ?? "Guest request";
+
+        var req = new SwitchStationRequest(_selected.TerminalId, target.TerminalId, _cashierName, reason);
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.SwitchStationAsync), req);
+
+        if (res.Ok)
+        {
+            MessageBox.Show(this, $"Session successfully transferred from {_selected.Name} to {target.Name}!\n\nAll session time, balance, and open charges have been seamlessly moved.", "Station Transferred", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else
+        {
+            MessageBox.Show(this, res.Error, "Switch Station Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private void ViewScreen_Click(object sender, RoutedEventArgs e)
     {
         if (_selected is null) return;
@@ -1168,29 +1237,172 @@ public partial class MainWindow : Window
         await RefreshSettingsViewAsync();
     }
 
+    private void PopulateConfigFields(MasterSystemSettingsDto cfg)
+    {
+        ConfigMetaText.Text = $"SCHEMA: {cfg.SchemaVersion} · LAST UPDATED: {cfg.LastUpdatedAtUtc:yyyy-MM-dd HH:mm:ss} UTC BY {cfg.LastUpdatedBy.ToUpperInvariant()} · WAL ATOMIC WRITES";
+
+        // 1. Rack
+        CfgInactivityMinutes.Text = cfg.InactivityStandbyMinutes.ToString();
+        SelectComboContent(CfgInactivityMode, cfg.InactivityStandbyMode);
+        SelectComboContent(CfgUsbStoragePolicy, cfg.UsbStoragePolicy);
+        CfgEnableInactivityStandby.IsChecked = cfg.EnableInactivityStandby;
+        CfgAutoKillProhibited.IsChecked = cfg.AutoKillProhibitedProcesses;
+        CfgProhibitedCsv.Text = cfg.ProhibitedProcessesCsv;
+        CfgBlockWinKey.IsChecked = cfg.ShellLockBlockWinKey;
+        CfgBlockAltTab.IsChecked = cfg.ShellLockBlockAltTab;
+        CfgBlockCtrlShiftEsc.IsChecked = cfg.ShellLockBlockCtrlShiftEsc;
+        CfgBlockTaskMgr.IsChecked = cfg.ShellLockBlockTaskManager;
+
+        // 2. Privacy & Lifecycle
+        CfgKillUserProcesses.IsChecked = cfg.CleanupKillUserProcessesOnSessionEnd;
+        CfgClearBrowserCaches.IsChecked = cfg.CleanupClearBrowserCachesOnSessionEnd;
+        CfgWipeDownloadsDesktop.IsChecked = cfg.CleanupWipeDownloadsAndDesktop;
+        CfgResetVolume.IsChecked = cfg.CleanupResetMasterVolume;
+        CfgResetMouse.IsChecked = cfg.CleanupResetMouseSensitivity;
+        CfgRebootRestoreOnEnd.IsChecked = cfg.EnableRebootToRestoreOnSessionEnd;
+        CfgGracePeriodSec.Text = cfg.NetworkDropGracePeriodSeconds.ToString();
+        CfgWarningMinutes.Text = cfg.SessionExtensionWarningMinutes.ToString();
+        SelectComboContent(CfgDisklessProvider, cfg.DisklessProvider);
+
+        // 3. Dynamic Tariff
+        CfgMinSessionCharge.Text = cfg.MinimumSessionCharge.ToString("F2");
+        SelectComboContent(CfgRoundingRule, cfg.CurrencyRoundingRule);
+        CfgFixedWindowPasses.IsChecked = cfg.EnableFixedWindowPasses;
+        CfgDynamicOccupancy.IsChecked = cfg.EnableDynamicOccupancyMultipliers;
+        CfgOccLowThresh.Text = cfg.OccupancyLowThresholdPercent.ToString();
+        CfgOccDiscount.Text = cfg.LowOccupancyDiscountPercent.ToString("F2");
+        CfgOccHighThresh.Text = cfg.OccupancyHighThresholdPercent.ToString();
+        CfgOccSurcharge.Text = cfg.HighOccupancySurchargePercent.ToString("F2");
+
+        // 4. POS & Receipts
+        CfgVenueName.Text = cfg.VenueName;
+        CfgCurrencySymbol.Text = cfg.CurrencySymbol;
+        CfgCurrencyCode.Text = cfg.CurrencyCode;
+        CfgDecimalPlaces.Text = cfg.CurrencyDecimalPlaces.ToString();
+        CfgTaxLabel.Text = cfg.TaxLabel;
+        CfgTaxRate.Text = cfg.TaxRatePercent.ToString("F2");
+        CfgOpeningFloat.Text = cfg.DefaultOpeningFloat.ToString("F2");
+        CfgReceiptHeader.Text = cfg.ReceiptHeaderText;
+        CfgReceiptFooter.Text = cfg.ReceiptFooterNotes;
+        SelectComboContent(CfgPrinterWidth, cfg.ReceiptPrinterWidthMm == 58 ? "58mm" : "80mm");
+        CfgDrawerPulse.Text = cfg.CashDrawerKickPulseCode;
+        CfgMandatoryLoanReturn.IsChecked = cfg.EnforceMandatoryHardwareLoanReturnOnCheckout;
+
+        // 5. RBAC
+        CfgPinManualTime.IsChecked = cfg.RequireSupervisorPinForManualTimeAdd;
+        CfgPinBillVoid.IsChecked = cfg.RequireSupervisorPinForBillVoid;
+        CfgPinDrawerKick.IsChecked = cfg.RequireSupervisorPinForManualDrawerKick;
+        CfgPinStockAdjust.IsChecked = cfg.RequireSupervisorPinForStockAdjustment;
+        CfgBlindDrawerClose.IsChecked = cfg.EnforceBlindCashDrawerClose;
+
+        // 6. Network / IoT
+        CfgSignalRPort.Text = cfg.SignalRServerPort.ToString();
+        CfgWolSubnet.Text = cfg.WakeOnLanBroadcastSubnet;
+        CfgWolPort.Text = cfg.WakeOnLanPort.ToString();
+        SelectComboContent(CfgRouterType, cfg.RouterType);
+        CfgRouterIp.Text = cfg.RouterIpAddress;
+        CfgBandwidthLimit.Text = cfg.GuestDefaultBandwidthLimitMbps.ToString();
+        CfgMqttHost.Text = cfg.MqttBrokerAddress;
+        CfgMqttPort.Text = cfg.MqttBrokerPort.ToString();
+        CfgMqttUser.Text = cfg.MqttUsername;
+    }
+
+    private static void SelectComboContent(ComboBox combo, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        foreach (ComboBoxItem item in combo.Items)
+        {
+            if ((item.Content as string)?.Equals(value, StringComparison.OrdinalIgnoreCase) == true)
+            {
+                item.IsSelected = true;
+                break;
+            }
+        }
+    }
+
+    private MasterSystemSettingsDto CollectConfigDto(MasterSystemSettingsDto original)
+    {
+        return original with
+        {
+            // 1. Rack
+            InactivityStandbyMinutes = int.TryParse(CfgInactivityMinutes.Text.Trim(), out var im) ? im : 10,
+            InactivityStandbyMode = (CfgInactivityMode.SelectedItem as ComboBoxItem)?.Content as string ?? "Sleep",
+            UsbStoragePolicy = (CfgUsbStoragePolicy.SelectedItem as ComboBoxItem)?.Content as string ?? "WhitelistHidOnly",
+            EnableInactivityStandby = CfgEnableInactivityStandby.IsChecked == true,
+            AutoKillProhibitedProcesses = CfgAutoKillProhibited.IsChecked == true,
+            ProhibitedProcessesCsv = CfgProhibitedCsv.Text.Trim(),
+            ShellLockBlockWinKey = CfgBlockWinKey.IsChecked == true,
+            ShellLockBlockAltTab = CfgBlockAltTab.IsChecked == true,
+            ShellLockBlockCtrlShiftEsc = CfgBlockCtrlShiftEsc.IsChecked == true,
+            ShellLockBlockTaskManager = CfgBlockTaskMgr.IsChecked == true,
+
+            // 2. Privacy
+            CleanupKillUserProcessesOnSessionEnd = CfgKillUserProcesses.IsChecked == true,
+            CleanupClearBrowserCachesOnSessionEnd = CfgClearBrowserCaches.IsChecked == true,
+            CleanupWipeDownloadsAndDesktop = CfgWipeDownloadsDesktop.IsChecked == true,
+            CleanupResetMasterVolume = CfgResetVolume.IsChecked == true,
+            CleanupResetMouseSensitivity = CfgResetMouse.IsChecked == true,
+            EnableRebootToRestoreOnSessionEnd = CfgRebootRestoreOnEnd.IsChecked == true,
+            NetworkDropGracePeriodSeconds = int.TryParse(CfgGracePeriodSec.Text.Trim(), out var gps) ? gps : 180,
+            SessionExtensionWarningMinutes = int.TryParse(CfgWarningMinutes.Text.Trim(), out var wm) ? wm : 5,
+            DisklessProvider = (CfgDisklessProvider.SelectedItem as ComboBoxItem)?.Content as string ?? "None",
+
+            // 3. Dynamic Tariff
+            MinimumSessionCharge = decimal.TryParse(CfgMinSessionCharge.Text.Trim(), out var msc) ? msc : 1.00m,
+            CurrencyRoundingRule = (CfgRoundingRule.SelectedItem as ComboBoxItem)?.Content as string ?? "None",
+            EnableFixedWindowPasses = CfgFixedWindowPasses.IsChecked == true,
+            EnableDynamicOccupancyMultipliers = CfgDynamicOccupancy.IsChecked == true,
+            OccupancyLowThresholdPercent = int.TryParse(CfgOccLowThresh.Text.Trim(), out var olt) ? olt : 30,
+            LowOccupancyDiscountPercent = decimal.TryParse(CfgOccDiscount.Text.Trim(), out var lod) ? lod : 10m,
+            OccupancyHighThresholdPercent = int.TryParse(CfgOccHighThresh.Text.Trim(), out var oht) ? oht : 85,
+            HighOccupancySurchargePercent = decimal.TryParse(CfgOccSurcharge.Text.Trim(), out var hos) ? hos : 15m,
+
+            // 4. POS & Receipts
+            VenueName = CfgVenueName.Text.Trim(),
+            CurrencySymbol = CfgCurrencySymbol.Text.Trim(),
+            CurrencyCode = CfgCurrencyCode.Text.Trim(),
+            CurrencyDecimalPlaces = int.TryParse(CfgDecimalPlaces.Text.Trim(), out var dp) ? dp : 2,
+            TaxLabel = CfgTaxLabel.Text.Trim(),
+            TaxRatePercent = decimal.TryParse(CfgTaxRate.Text.Trim(), out var tr) ? tr : 0m,
+            DefaultOpeningFloat = decimal.TryParse(CfgOpeningFloat.Text.Trim(), out var of) ? of : 50m,
+            ReceiptHeaderText = CfgReceiptHeader.Text,
+            ReceiptFooterNotes = CfgReceiptFooter.Text,
+            ReceiptPrinterWidthMm = (CfgPrinterWidth.SelectedItem as ComboBoxItem)?.Content as string == "58mm" ? 58 : 80,
+            CashDrawerKickPulseCode = CfgDrawerPulse.Text.Trim(),
+            EnforceMandatoryHardwareLoanReturnOnCheckout = CfgMandatoryLoanReturn.IsChecked == true,
+
+            // 5. RBAC
+            RequireSupervisorPinForManualTimeAdd = CfgPinManualTime.IsChecked == true,
+            RequireSupervisorPinForBillVoid = CfgPinBillVoid.IsChecked == true,
+            RequireSupervisorPinForManualDrawerKick = CfgPinDrawerKick.IsChecked == true,
+            RequireSupervisorPinForStockAdjustment = CfgPinStockAdjust.IsChecked == true,
+            EnforceBlindCashDrawerClose = CfgBlindDrawerClose.IsChecked == true,
+
+            // 6. Network / IoT
+            SignalRServerPort = int.TryParse(CfgSignalRPort.Text.Trim(), out var sp) ? sp : 40000,
+            WakeOnLanBroadcastSubnet = CfgWolSubnet.Text.Trim(),
+            WakeOnLanPort = int.TryParse(CfgWolPort.Text.Trim(), out var wp) ? wp : 9,
+            RouterType = (CfgRouterType.SelectedItem as ComboBoxItem)?.Content as string ?? "None",
+            RouterIpAddress = CfgRouterIp.Text.Trim(),
+            GuestDefaultBandwidthLimitMbps = int.TryParse(CfgBandwidthLimit.Text.Trim(), out var bw) ? bw : 50,
+            MqttBrokerAddress = CfgMqttHost.Text.Trim(),
+            MqttBrokerPort = int.TryParse(CfgMqttPort.Text.Trim(), out var mp) ? mp : 1883,
+            MqttUsername = CfgMqttUser.Text.Trim()
+        };
+    }
+
     private async Task RefreshSettingsViewAsync()
     {
-        var settings = await _dashboard!.InvokeAsync<VenueSettingsDto>(nameof(IDashboardServer.GetVenueSettingsAsync));
-        if (settings is not null)
+        try
         {
-            SettingsVenueName.Text = settings.VenueName;
-            SettingsCurrencySymbol.Text = settings.CurrencySymbol;
-            SettingsFloat.Text = settings.DefaultOpeningFloat.ToString("F2");
-            SettingsTax.Text = settings.TaxRatePercent.ToString("F2");
-            SettingsPrintCost.Text = settings.PrintCostPerPage.ToString("F2");
-            SettingsHardwareWatchdog.IsChecked = settings.EnableHardwareAntiTheftWatchdog;
-            SettingsEnforceRefreshRate.IsChecked = settings.EnforceNativeRefreshRate;
-            SettingsRebootOnEnd.IsChecked = settings.EnableRebootOnSessionEnd;
-            SettingsGracePeriod.Text = settings.OfflineGracePeriodSeconds.ToString();
-
-            foreach (ComboBoxItem item in SettingsDisklessProvider.Items)
+            var masterCfg = await _dashboard!.InvokeAsync<MasterSystemSettingsDto>(nameof(IDashboardServer.GetMasterSettingsAsync));
+            if (masterCfg is not null)
             {
-                if ((item.Content as string)?.Equals(settings.DisklessProvider, StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    item.IsSelected = true;
-                    break;
-                }
+                PopulateConfigFields(masterCfg);
             }
+        }
+        catch
+        {
         }
 
         _allCashiers = await _dashboard!.InvokeAsync<IReadOnlyList<CashierDto>>(nameof(IDashboardServer.GetCashiersAsync));
@@ -1206,38 +1418,67 @@ public partial class MainWindow : Window
     {
         try
         {
-            var dbInfo = await _dashboard!.InvokeAsync<string>(nameof(IDashboardServer.GetDatabaseInfoAsync));
-            DatabaseInfoText.Text = dbInfo;
-
-            var backups = await _dashboard!.InvokeAsync<IReadOnlyList<BackupFileInfoDto>>(nameof(IDashboardServer.ListBackupsAsync));
+            if (_dashboard is null) return;
+            var backups = await _dashboard.InvokeAsync<IReadOnlyList<BackupFileInfoDto>>(nameof(IDashboardServer.ListBackupsAsync));
             BackupsGrid.ItemsSource = backups;
+
+            var dbInfo = await _dashboard.InvokeAsync<string>(nameof(IDashboardServer.GetDatabaseInfoAsync));
+            DatabaseInfoText.Text = dbInfo;
         }
         catch
         {
-            // Ignore UI refresh transient errors
         }
     }
 
-    private async void SaveSettings_Click(object sender, RoutedEventArgs e)
+    private async void SaveMasterConfig_Click(object sender, RoutedEventArgs e)
     {
-        var current = await _dashboard!.InvokeAsync<VenueSettingsDto>(nameof(IDashboardServer.GetVenueSettingsAsync));
-        var updated = current with
-        {
-            VenueName = SettingsVenueName.Text.Trim(),
-            CurrencySymbol = SettingsCurrencySymbol.Text.Trim(),
-            DefaultOpeningFloat = decimal.TryParse(SettingsFloat.Text.Trim(), out var f) ? f : 50m,
-            TaxRatePercent = decimal.TryParse(SettingsTax.Text.Trim(), out var t) ? t : 0m,
-            PrintCostPerPage = decimal.TryParse(SettingsPrintCost.Text.Trim(), out var p) ? p : 0.15m,
-            EnableHardwareAntiTheftWatchdog = SettingsHardwareWatchdog.IsChecked == true,
-            EnforceNativeRefreshRate = SettingsEnforceRefreshRate.IsChecked == true,
-            EnableRebootOnSessionEnd = SettingsRebootOnEnd.IsChecked == true,
-            DisklessProvider = (SettingsDisklessProvider.SelectedItem as ComboBoxItem)?.Content as string ?? "None",
-            OfflineGracePeriodSeconds = int.TryParse(SettingsGracePeriod.Text.Trim(), out var gp) ? gp : 180
-        };
+        var current = await _dashboard!.InvokeAsync<MasterSystemSettingsDto>(nameof(IDashboardServer.GetMasterSettingsAsync));
+        var updated = CollectConfigDto(current);
 
-        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.SaveVenueSettingsAsync), updated, _cashierName);
-        if (res.Ok) MessageBox.Show(this, "Venue settings saved successfully.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-        else MessageBox.Show(this, res.Error, "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(
+            nameof(IDashboardServer.SaveMasterSettingsAsync), updated, "Admin Studio configuration update", _cashierName);
+
+        if (res.Ok)
+        {
+            MessageBox.Show(this, "Master configuration saved and broadcast to all live client agents successfully.", "Configuration Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            await RefreshSettingsViewAsync();
+        }
+        else
+        {
+            MessageBox.Show(this, res.Error, "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void ResetCategoryConfig_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string category }) return;
+
+        var confirm = MessageBox.Show(this, $"Reset all settings in category '{category.ToUpperInvariant()}' to recommended defaults?", "Reset Category Defaults", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        var res = await _dashboard!.InvokeAsync<MasterSystemSettingsDto>(
+            nameof(IDashboardServer.ResetSettingsCategoryAsync), category, _cashierName);
+
+        if (res is not null)
+        {
+            PopulateConfigFields(res);
+            MessageBox.Show(this, $"Category '{category}' reset to defaults.", "Reset Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private async void ResetAllConfig_Click(object sender, RoutedEventArgs e)
+    {
+        var confirm = MessageBox.Show(this, "Reset ALL system settings, policies, tariffs, and integrations to factory recommended defaults?\n\nThis will apply immediately and broadcast to all connected agents.", "Reset All System Defaults", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        var res = await _dashboard!.InvokeAsync<MasterSystemSettingsDto>(
+            nameof(IDashboardServer.ResetSettingsCategoryAsync), "all", _cashierName);
+
+        if (res is not null)
+        {
+            PopulateConfigFields(res);
+            MessageBox.Show(this, "All system configuration settings have been reset to factory defaults.", "Reset Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     private async void BackupDatabase_Click(object sender, RoutedEventArgs e)

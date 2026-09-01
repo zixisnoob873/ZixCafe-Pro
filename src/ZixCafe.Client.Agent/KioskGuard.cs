@@ -21,14 +21,24 @@ public static class KioskGuard
         (ExplorerPoliciesKey, "NoViewOnDrive", 0)
     ];
 
-    public static void Install()
+    public static void Install(bool blockTaskMgr = true, bool blockWinKey = true)
     {
         try
         {
-            foreach (var (key, name, value) in Policies)
+            using var sysReg = Registry.CurrentUser.CreateSubKey(PoliciesKey);
+            if (sysReg is not null)
             {
-                using var reg = Registry.CurrentUser.CreateSubKey(key);
-                reg?.SetValue(name, value, RegistryValueKind.DWord);
+                if (blockTaskMgr) sysReg.SetValue("DisableTaskMgr", 1, RegistryValueKind.DWord);
+                else sysReg.DeleteValue("DisableTaskMgr", false);
+
+                if (blockWinKey) sysReg.SetValue("NoWinKeys", 1, RegistryValueKind.DWord);
+                else sysReg.DeleteValue("NoWinKeys", false);
+            }
+
+            using var expReg = Registry.CurrentUser.CreateSubKey(ExplorerPoliciesKey);
+            if (expReg is not null)
+            {
+                expReg.SetValue("NoRun", 1, RegistryValueKind.DWord);
             }
         }
         catch

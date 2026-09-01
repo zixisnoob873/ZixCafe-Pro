@@ -34,6 +34,10 @@ public interface ITerminalClient
     Task CoordinateDisklessWipe(string provider, bool rebootNow);
 
     Task SetOfflineGracePeriod(int gracePeriodSeconds);
+
+    Task ApplyRuntimePolicy(MasterSystemSettingsDto settings);
+
+    Task TriggerStandby(string mode);
 }
 
 /// <summary>
@@ -78,6 +82,8 @@ public interface IDashboardClient
     Task WaitlistChanged(IReadOnlyList<WaitlistEntryDto> waiting);
 
     Task ScreenFrameReceived(Guid terminalId, byte[] jpegBytes);
+
+    Task OnConfigurationUpdated(MasterSystemSettingsDto settings);
 }
 
 /// <summary>
@@ -217,4 +223,17 @@ public interface IDashboardServer
     Task<ResultResponse> SetTerminalHardwareBaselineAsync(Guid terminalId, string requestingCashier);
     Task<ResultResponse> EnforceTerminalRefreshRateAsync(Guid terminalId, string requestingCashier);
     Task<ResultResponse> TriggerDisklessWipeAsync(Guid terminalId, string requestingCashier);
+
+    // Counter & Desk Workflows
+    Task<ResultResponse> SwitchStationAsync(SwitchStationRequest req);
+
+    // Energy & IoT Automation
+    Task<ResultResponse> WakeTerminalAsync(Guid terminalId, string requestingCashier);
+    Task<ResultResponse> WakeAllTerminalsAsync(Guid? zoneId, string requestingCashier);
+    Task<ResultResponse> TriggerSmartRelayAsync(SmartRelayTriggerRequest req);
+
+    // Master Configuration Engine
+    Task<MasterSystemSettingsDto> GetMasterSettingsAsync();
+    Task<ResultResponse> SaveMasterSettingsAsync(MasterSystemSettingsDto settings, string reason, string cashierName);
+    Task<MasterSystemSettingsDto> ResetSettingsCategoryAsync(string category, string cashierName);
 }
