@@ -67,7 +67,12 @@ public class VenueSettingsService
             s.AutoBackupPath,
             s.AutoBackupIntervalHours,
             s.LastBackupAtUtc,
-            s.IsConfigured);
+            s.IsConfigured,
+            s.EnableHardwareAntiTheftWatchdog,
+            s.EnforceNativeRefreshRate,
+            s.EnableRebootOnSessionEnd,
+            s.DisklessProvider,
+            s.OfflineGracePeriodSeconds);
     }
 
     public async Task<ResultResponse> SaveSettingsAsync(VenueSettingsDto dto, string requestingCashier)
@@ -93,6 +98,11 @@ public class VenueSettingsService
         s.LicenseKey = dto.LicenseKey?.Trim();
         s.AutoBackupPath = dto.AutoBackupPath?.Trim();
         s.AutoBackupIntervalHours = Math.Clamp(dto.AutoBackupIntervalHours, 1, 168);
+        s.EnableHardwareAntiTheftWatchdog = dto.EnableHardwareAntiTheftWatchdog;
+        s.EnforceNativeRefreshRate = dto.EnforceNativeRefreshRate;
+        s.EnableRebootOnSessionEnd = dto.EnableRebootOnSessionEnd;
+        s.DisklessProvider = string.IsNullOrWhiteSpace(dto.DisklessProvider) ? "None" : dto.DisklessProvider.Trim();
+        s.OfflineGracePeriodSeconds = Math.Clamp(dto.OfflineGracePeriodSeconds, 10, 3600);
         s.IsConfigured = true;
 
         await db.SaveChangesAsync();

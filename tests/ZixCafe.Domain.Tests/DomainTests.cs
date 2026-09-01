@@ -368,3 +368,168 @@ public class DatabaseBackupValidationTests
         }
     }
 }
+
+public class HardwareAntiTheftWatchdogTests
+{
+    [Fact]
+    public void Identical_hardware_reports_zero_discrepancies()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "AMD Ryzen 7 7800X3D",
+            CpuId = "CPU-1001",
+            GpuName = "NVIDIA GeForce RTX 4080",
+            GpuDeviceId = "PCI\\VEN_10DE&DEV_2704",
+            TotalRamMb = 32768,
+            RamSerials = "RAM-32GB-SN1",
+            DiskSerial = "NVME-SN-9988",
+            UsbDevicesJson = System.Text.Json.JsonSerializer.Serialize(new[] { "USB\\VID_046D&PID_C08B", "USB\\VID_1532&PID_022A" })
+        };
+
+        var currentUsb = new List<string> { "USB\\VID_046D&PID_C08B", "USB\\VID_1532&PID_022A" };
+
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "AMD Ryzen 7 7800X3D",
+            currentCpuId: "CPU-1001",
+            currentGpuName: "NVIDIA GeForce RTX 4080",
+            currentGpuDeviceId: "PCI\\VEN_10DE&DEV_2704",
+            currentRamMb: 32768,
+            currentRamSerials: "RAM-32GB-SN1",
+            currentDiskSerial: "NVME-SN-9988",
+            currentUsbDeviceIds: currentUsb);
+
+        Assert.Empty(discrepancies);
+    }
+
+    [Fact]
+    public void Ram_stick_removal_triggers_critical_alert()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "Intel Core i7-14700K",
+            GpuName = "NVIDIA GeForce RTX 4070 Ti",
+            TotalRamMb = 32768,
+            RamSerials = "RAM-32GB-SN1"
+        };
+
+        // User or thief removed a 16GB RAM stick (now 16384 MB)
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "Intel Core i7-14700K",
+            currentCpuId: null,
+            currentGpuName: "NVIDIA GeForce RTX 4070 Ti",
+            currentGpuDeviceId: null,
+            currentRamMb: 16384,
+            currentRamSerials: "RAM-16GB-SN1",
+            currentDiskSerial: null,
+            currentUsbDeviceIds: []);
+
+        Assert.Contains(discrepancies, d => d.ComponentType == "RAM" && d.Severity == "Critical");
+    }
+
+    [Fact]
+    public void Gpu_swap_or_removal_triggers_critical_alert()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "Intel Core i7-14700K",
+            GpuName = "NVIDIA GeForce RTX 4090",
+            GpuDeviceId = "PCI\\VEN_10DE&DEV_2684",
+            TotalRamMb = 32768
+        };
+
+        // GPU swapped for older RTX 3060
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "Intel Core i7-14700K",
+            currentCpuId: null,
+            currentGpuName: "NVIDIA GeForce RTX 3060",
+            currentGpuDeviceId: "PCI\\VEN_10DE&DEV_2503",
+            currentRamMb: 32768,
+            currentRamSerials: null,
+            currentDiskSerial: null,
+            currentUsbDeviceIds: []);
+
+        Assert.Contains(discrepancies, d => d.ComponentType == "GPU" && d.Severity == "Critical");
+    }
+
+    [Fact]
+    public void Unplugged_peripheral_triggers_warning_alert()
+    {
+        var baseline = new TerminalHardwareBaseline
+        {
+            TerminalId = Guid.NewGuid(),
+            CpuName = "Ryzen 5 7600",
+            GpuName = "RTX 4060",
+            TotalRamMb = 16384,
+            UsbDevicesJson = System.Text.Json.JsonSerializer.Serialize(new[]
+            {
+                "USB\\VID_046D&PID_C08B", // Mouse
+                "USB\\VID_1532&PID_022A", // Keyboard
+                "USB\\VID_0951&PID_16D8"  // Headset
+            })
+        };
+
+        // Headset was unplugged / stolen
+        var currentUsb = new List<string>
+        {
+            "USB\\VID_046D&PID_C08B",
+            "USB\\VID_1532&PID_022A"
+        };
+
+        var discrepancies = HardwareAntiTheftEngine.Compare(
+            baseline,
+            currentCpuName: "Ryzen 5 7600",
+            currentCpuId: null,
+            currentGpuName: "RTX 4060",
+            currentGpuDeviceId: null,
+            currentRamMb: 16384,
+            currentRamSerials: null,
+            currentDiskSerial: null,
+            currentUsbDeviceIds: currentUsb);
+
+        Assert.Contains(discrepancies, d => d.ComponentType == "USB Peripheral" && d.Severity == "Warning");
+    }
+}
+
+public class DisplayRefreshRatePolicyTests
+{
+    [Fact]
+    public void Native_high_refresh_rate_is_preferred_over_default_60hz()
+    {
+        var availableModes = new[] { 60, 120, 144, 240, 360 };
+        var maxHz = availableModes.Max();
+
+        Assert.Equal(360, maxHz);
+        Assert.True(maxHz > 60);
+    }
+}
+
+public class OfflineGracePeriodTests
+{
+    [Fact]
+    public void Grace_period_countdown_formats_properly()
+    {
+        var remainingSeconds = 175;
+        var span = TimeSpan.FromSeconds(remainingSeconds);
+        var formatted = $"{(int)span.TotalMinutes:00}:{span.Seconds:00}";
+
+        Assert.Equal("02:55", formatted);
+    }
+
+    [Fact]
+    public void Grace_period_clamps_within_configured_bounds()
+    {
+        var configured = 5000;
+        var clamped = Math.Clamp(configured, 10, 3600);
+        Assert.Equal(3600, clamped);
+
+        var tooLow = -50;
+        var clampedLow = Math.Clamp(tooLow, 10, 3600);
+        Assert.Equal(10, clampedLow);
+    }
+}

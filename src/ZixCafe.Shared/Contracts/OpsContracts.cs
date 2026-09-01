@@ -36,7 +36,12 @@ public record VenueSettingsDto(
     string? AutoBackupPath,
     int AutoBackupIntervalHours,
     DateTime? LastBackupAtUtc,
-    bool IsConfigured);
+    bool IsConfigured,
+    bool EnableHardwareAntiTheftWatchdog,
+    bool EnforceNativeRefreshRate,
+    bool EnableRebootOnSessionEnd,
+    string DisklessProvider,
+    int OfflineGracePeriodSeconds);
 
 public record TariffRuleDto(
     Guid Id,
@@ -380,3 +385,51 @@ public record BackupFileInfoDto(
     string FullPath,
     long SizeBytes,
     DateTime CreatedAtUtc);
+
+public record UsbPeripheralDto(
+    string DeviceId,
+    string Name,
+    string Category,
+    bool IsConnected);
+
+public record HardwareInventoryDto(
+    Guid TerminalId,
+    string CpuName,
+    string? CpuId,
+    string GpuName,
+    string? GpuDeviceId,
+    int? GpuVramMb,
+    int TotalRamMb,
+    string? RamSerials,
+    string? DiskModel,
+    string? DiskSerial,
+    int? ActiveRefreshRateHz,
+    int? MaxSupportedRefreshRateHz,
+    string? DisplayResolution,
+    IReadOnlyList<UsbPeripheralDto> UsbDevices,
+    DateTime CapturedAtUtc);
+
+public record HardwareDiscrepancyDto(
+    string ComponentType,
+    string BaselineValue,
+    string CurrentValue,
+    string Severity,
+    string Description);
+
+public record HardwareBaselineDto(
+    Guid Id,
+    Guid TerminalId,
+    string TerminalName,
+    string CpuName,
+    string? CpuId,
+    string GpuName,
+    string? GpuDeviceId,
+    int TotalRamMb,
+    string? RamSerials,
+    string? DiskModel,
+    string? DiskSerial,
+    int? NativeRefreshRateHz,
+    string? DisplayResolution,
+    IReadOnlyList<string> UsbDevices,
+    DateTime EstablishedAtUtc,
+    DateTime LastVerifiedAtUtc);

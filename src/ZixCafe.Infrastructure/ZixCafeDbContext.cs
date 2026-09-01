@@ -32,9 +32,19 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
     public DbSet<VenueSettings> VenueSettings => Set<VenueSettings>();
     public DbSet<ChatEntry> ChatEntries => Set<ChatEntry>();
     public DbSet<AlertMute> AlertMutes => Set<AlertMute>();
+    public DbSet<TerminalHardwareBaseline> HardwareBaselines => Set<TerminalHardwareBaseline>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<TerminalHardwareBaseline>(e =>
+        {
+            e.HasIndex(h => h.TerminalId).IsUnique();
+            e.HasOne(h => h.Terminal)
+                .WithOne()
+                .HasForeignKey<TerminalHardwareBaseline>(h => h.TerminalId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Zone>(e =>
         {
             e.Property(z => z.Name).HasMaxLength(60).IsRequired();

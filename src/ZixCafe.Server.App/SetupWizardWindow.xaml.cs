@@ -81,7 +81,12 @@ public partial class SetupWizardWindow : Window
                 "backups",
                 24,
                 null,
-                true
+                true,
+                true,
+                true,
+                false,
+                "None",
+                180
             );
 
             await _settingsService.SaveSettingsAsync(settings, adminUser);

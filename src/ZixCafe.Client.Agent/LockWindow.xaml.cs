@@ -23,6 +23,9 @@ public partial class LockWindow : Window
     };
     private DateTime? _plannedEnd;
     private bool _paused;
+    private bool _isSessionActive;
+
+    public bool IsSessionActive => _isSessionActive;
 
     public LockWindow(string terminalName, Func<string, Task> sendChat)
     {
@@ -44,6 +47,8 @@ public partial class LockWindow : Window
 
     public void BeginSession(int? minutesGranted, DateTime? plannedEndUtc)
     {
+        _isSessionActive = true;
+        _paused = false;
         _plannedEnd = plannedEndUtc
             ?? (minutesGranted is null ? null : DateTime.UtcNow.AddMinutes(minutesGranted.Value));
         CountdownText.Text = minutesGranted is null ? "RUNNING" : CountdownText.Text;
@@ -54,6 +59,19 @@ public partial class LockWindow : Window
             : "Session running. Your time is below.";
         _countdown.Start();
         RenderCountdown();
+        HideOfflineGraceBanner();
+    }
+
+    public void ShowOfflineGraceBanner(int secondsRemaining)
+    {
+        OfflineGraceOverlay.Visibility = Visibility.Visible;
+        var span = TimeSpan.FromSeconds(Math.Max(0, secondsRemaining));
+        OfflineGraceTimerText.Text = $"{(int)span.TotalMinutes:00}:{span.Seconds:00}";
+    }
+
+    public void HideOfflineGraceBanner()
+    {
+        OfflineGraceOverlay.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
@@ -98,6 +116,7 @@ public partial class LockWindow : Window
 
     public void EndSession(string reason)
     {
+        _isSessionActive = false;
         _countdown.Stop();
         _plannedEnd = null;
         _paused = false;
@@ -107,6 +126,7 @@ public partial class LockWindow : Window
         StatusText.Text = string.IsNullOrEmpty(reason)
             ? "Session ended. Ask the front desk to start a new one."
             : reason;
+        HideOfflineGraceBanner();
     }
 
     public void ShowBanner(string severity, string message)

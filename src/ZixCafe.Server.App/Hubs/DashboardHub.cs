@@ -31,6 +31,7 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
     private readonly MaintenanceAndReservationService _maintenance;
     private readonly ChatHistoryService _chatHistory;
     private readonly DataCareAndBackupService _backup;
+    private readonly HardwareIntegrityService _hardware;
 
     public DashboardHub(
         IDbContextFactory<ZixCafeDbContext> dbFactory,
@@ -51,7 +52,8 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
         RemoteOpsService remoteOps,
         MaintenanceAndReservationService maintenance,
         ChatHistoryService chatHistory,
-        DataCareAndBackupService backup)
+        DataCareAndBackupService backup,
+        HardwareIntegrityService hardware)
     {
         _dbFactory = dbFactory;
         _registry = registry;
@@ -72,6 +74,7 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
         _maintenance = maintenance;
         _chatHistory = chatHistory;
         _backup = backup;
+        _hardware = hardware;
     }
 
     public async Task SubscribeAsync()
@@ -394,4 +397,16 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
             await Clients.Caller.TerminalStateChanged(dto);
         }
     }
+
+    public async Task<HardwareBaselineDto?> GetTerminalHardwareAsync(Guid terminalId)
+        => await _hardware.GetTerminalHardwareAsync(terminalId);
+
+    public async Task<ResultResponse> SetTerminalHardwareBaselineAsync(Guid terminalId, string requestingCashier)
+        => await _hardware.SetTerminalHardwareBaselineAsync(terminalId, requestingCashier);
+
+    public async Task<ResultResponse> EnforceTerminalRefreshRateAsync(Guid terminalId, string requestingCashier)
+        => await _hardware.EnforceTerminalRefreshRateAsync(terminalId, requestingCashier);
+
+    public async Task<ResultResponse> TriggerDisklessWipeAsync(Guid terminalId, string requestingCashier)
+        => await _hardware.TriggerDisklessWipeAsync(terminalId, requestingCashier);
 }

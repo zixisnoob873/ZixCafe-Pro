@@ -20,6 +20,8 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
     private readonly AlertsCenterService _alerts;
     private readonly PeripheralMeteringService _peripherals;
     private readonly RemoteOpsService _remoteOps;
+    private readonly HardwareIntegrityService _hardware;
+    private readonly VenueSettingsService _venueSettings;
 
     public TerminalHub(
         TerminalRegistry registry,
@@ -28,7 +30,9 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         ChatHistoryService chatHistory,
         AlertsCenterService alerts,
         PeripheralMeteringService peripherals,
-        RemoteOpsService remoteOps)
+        RemoteOpsService remoteOps,
+        HardwareIntegrityService hardware,
+        VenueSettingsService venueSettings)
     {
         _registry = registry;
         _dbFactory = dbFactory;
@@ -37,6 +41,8 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         _alerts = alerts;
         _peripherals = peripherals;
         _remoteOps = remoteOps;
+        _hardware = hardware;
+        _venueSettings = venueSettings;
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
@@ -93,6 +99,9 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
             (TerminalStatusDto)terminal.Status, true, request.AgentVersion,
             DateTime.UtcNow, null, 0, 0, null, null, false,
             terminal.MaintenanceReason, terminal.ReservedFor, terminal.CpuTemp, terminal.GpuTemp, terminal.RamPercent));
+
+        var settings = await _venueSettings.GetSettingsAsync();
+        _ = Clients.Caller.SetOfflineGracePeriod(settings.OfflineGracePeriodSeconds);
 
         return new RegisterResult(terminal.Id, terminal.Name, terminal.Zone.Name, issuedSecret);
     }
@@ -203,6 +212,27 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         if (terminalId != Guid.Empty)
         {
             await _peripherals.RecordUsbTransferAsync(terminalId, bytesTransferred);
+        }
+    }
+
+    public async Task ReportHardwareInventoryAsync(HardwareInventoryDto inventory)
+    {
+        await _hardware.ProcessHardwareInventoryAsync(inventory);
+    }
+
+    public async Task ReportDisplaySettingsAsync(int activeRefreshRateHz, int maxSupportedHz, string resolution)
+    {
+        var terminalId = Context.Items.TryGetValue("terminalId", out var v) ? (Guid)v! : Guid.Empty;
+        if (terminalId != Guid.Empty)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var terminal = await db.Terminals.FindAsync(terminalId);
+            if (terminal is not null)
+            {
+                terminal.NativeRefreshRateHz = maxSupportedHz;
+                terminal.DisplayResolution = resolution;
+                await db.SaveChangesAsync();
+            }
         }
     }
 

@@ -49,6 +49,7 @@ public static class ServerHostFactory
         builder.Services.AddSingleton<MaintenanceAndReservationService>();
         builder.Services.AddSingleton<ChatHistoryService>();
         builder.Services.AddSingleton<DataCareAndBackupService>();
+        builder.Services.AddSingleton<HardwareIntegrityService>();
         builder.Services.AddSingleton<LicenseService>();
 
         // Background services

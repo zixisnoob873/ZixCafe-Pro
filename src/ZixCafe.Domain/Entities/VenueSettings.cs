@@ -33,4 +33,11 @@ public class VenueSettings
     public DateTime? LastBackupAtUtc { get; set; }
 
     public bool IsConfigured { get; set; } = true;
+
+    // Hardware Monitoring & Integrity
+    public bool EnableHardwareAntiTheftWatchdog { get; set; } = true;
+    public bool EnforceNativeRefreshRate { get; set; } = true;
+    public bool EnableRebootOnSessionEnd { get; set; } = false;
+    public string DisklessProvider { get; set; } = "Auto";
+    public int OfflineGracePeriodSeconds { get; set; } = 180;
 }

@@ -50,6 +50,10 @@ public class Terminal
     public int? DiskFreeGb { get; set; }
  
     public string? HardwareProfileJson { get; set; }
+ 
+    public int? NativeRefreshRateHz { get; set; }
+
+    public string? DisplayResolution { get; set; }
 
     public DateTime? LastSeenAt { get; set; }
 

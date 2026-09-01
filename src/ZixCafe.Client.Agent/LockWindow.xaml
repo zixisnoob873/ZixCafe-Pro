@@ -28,6 +28,18 @@
                     <TextBlock Margin="10,0,0,0" Text="ZIXCAFE" VerticalAlignment="Center"
                                Style="{StaticResource DisplayHeading}" FontSize="14" />
                 </StackPanel>
+
+                <!-- Offline Grace Period Indicator -->
+                <Border x:Name="OfflineGraceOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource WarnBrush}"
+                        BorderThickness="1" Padding="12,4" CornerRadius="4" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚠️ OFFLINE GRACE PERIOD: " Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource WarnBrush}" />
+                        <TextBlock x:Name="OfflineGraceTimerText" Text="03:00" Style="{StaticResource MonoData}" FontSize="11" Foreground="{StaticResource InkBrush}" />
+                        <TextBlock Text=" (Reconnecting...)" Style="{StaticResource BodyText}" FontSize="11" Foreground="{StaticResource GhostBrush}" Margin="4,0,0,0" />
+                    </StackPanel>
+                </Border>
+
                 <TextBlock x:Name="TerminalNameText" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Style="{StaticResource CapsLabel}" Text="PC —" />
             </Grid>

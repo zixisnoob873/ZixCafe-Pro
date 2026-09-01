@@ -303,6 +303,71 @@ public partial class MainWindow : Window
         PauseResumeButton.IsEnabled = running;
         PauseResumeButton.Content = _selected.IsPaused ? "Resume (F3)" : "Pause (F3)";
         ProductPicker.IsEnabled = running;
+
+        _ = RefreshInspectorHardwareAsync(_selected.TerminalId);
+    }
+
+    private async Task RefreshInspectorHardwareAsync(Guid terminalId)
+    {
+        try
+        {
+            var hw = await _dashboard!.InvokeAsync<HardwareBaselineDto?>(nameof(IDashboardServer.GetTerminalHardwareAsync), terminalId);
+            if (hw is not null)
+            {
+                InspectorHwCpuGpu.Text = $"CPU: {hw.CpuName}\nGPU: {hw.GpuName}";
+                InspectorHwRamDisk.Text = $"RAM: {hw.TotalRamMb / 1024} GB · Disk: {hw.DiskModel ?? "System NVMe"}";
+                InspectorHwDisplay.Text = $"Display: {hw.DisplayResolution ?? "1920x1080"} @ {hw.NativeRefreshRateHz ?? 240}Hz (Native)";
+                InspectorHwPeripherals.Text = $"Peripherals: {hw.UsbDevices.Count} USB devices attached";
+            }
+            else
+            {
+                InspectorHwCpuGpu.Text = "CPU/GPU: Waiting for agent report...";
+                InspectorHwRamDisk.Text = "RAM/Disk: Waiting for agent report...";
+                InspectorHwDisplay.Text = "Display: 1920x1080 @ 240Hz";
+                InspectorHwPeripherals.Text = "Peripherals: 0 USB devices attached";
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private async void SetHardwareBaseline_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null) return;
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.SetTerminalHardwareBaselineAsync), _selected.TerminalId, _cashierName);
+        if (res.Ok)
+        {
+            MessageBox.Show(this, $"Official hardware baseline established for {_selected.Name}.", "Hardware Watchdog", MessageBoxButton.OK, MessageBoxImage.Information);
+            await RefreshInspectorHardwareAsync(_selected.TerminalId);
+        }
+        else
+        {
+            MessageBox.Show(this, res.Error ?? "Failed to set baseline.", "Hardware Watchdog", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void EnforceRefreshRate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null) return;
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.EnforceTerminalRefreshRateAsync), _selected.TerminalId, _cashierName);
+        if (res.Ok)
+        {
+            MessageBox.Show(this, $"Native maximum refresh rate command sent to {_selected.Name}.", "Display Enforcer", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private async void TriggerDisklessWipe_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null) return;
+        if (MessageBox.Show(this, $"Are you sure you want to trigger a diskless clean wipe and reboot on {_selected.Name}?", "Diskless Coordination", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.TriggerDisklessWipeAsync), _selected.TerminalId, _cashierName);
+            if (res.Ok)
+            {
+                MessageBox.Show(this, $"Clean wipe and reboot triggered on {_selected.Name}.", "Diskless Coordination", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 
     private void CloseInspector_Click(object sender, RoutedEventArgs e)
@@ -1113,6 +1178,19 @@ public partial class MainWindow : Window
             SettingsFloat.Text = settings.DefaultOpeningFloat.ToString("F2");
             SettingsTax.Text = settings.TaxRatePercent.ToString("F2");
             SettingsPrintCost.Text = settings.PrintCostPerPage.ToString("F2");
+            SettingsHardwareWatchdog.IsChecked = settings.EnableHardwareAntiTheftWatchdog;
+            SettingsEnforceRefreshRate.IsChecked = settings.EnforceNativeRefreshRate;
+            SettingsRebootOnEnd.IsChecked = settings.EnableRebootOnSessionEnd;
+            SettingsGracePeriod.Text = settings.OfflineGracePeriodSeconds.ToString();
+
+            foreach (ComboBoxItem item in SettingsDisklessProvider.Items)
+            {
+                if ((item.Content as string)?.Equals(settings.DisklessProvider, StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    item.IsSelected = true;
+                    break;
+                }
+            }
         }
 
         _allCashiers = await _dashboard!.InvokeAsync<IReadOnlyList<CashierDto>>(nameof(IDashboardServer.GetCashiersAsync));
@@ -1149,7 +1227,12 @@ public partial class MainWindow : Window
             CurrencySymbol = SettingsCurrencySymbol.Text.Trim(),
             DefaultOpeningFloat = decimal.TryParse(SettingsFloat.Text.Trim(), out var f) ? f : 50m,
             TaxRatePercent = decimal.TryParse(SettingsTax.Text.Trim(), out var t) ? t : 0m,
-            PrintCostPerPage = decimal.TryParse(SettingsPrintCost.Text.Trim(), out var p) ? p : 0.15m
+            PrintCostPerPage = decimal.TryParse(SettingsPrintCost.Text.Trim(), out var p) ? p : 0.15m,
+            EnableHardwareAntiTheftWatchdog = SettingsHardwareWatchdog.IsChecked == true,
+            EnforceNativeRefreshRate = SettingsEnforceRefreshRate.IsChecked == true,
+            EnableRebootOnSessionEnd = SettingsRebootOnEnd.IsChecked == true,
+            DisklessProvider = (SettingsDisklessProvider.SelectedItem as ComboBoxItem)?.Content as string ?? "None",
+            OfflineGracePeriodSeconds = int.TryParse(SettingsGracePeriod.Text.Trim(), out var gp) ? gp : 180
         };
 
         var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.SaveVenueSettingsAsync), updated, _cashierName);

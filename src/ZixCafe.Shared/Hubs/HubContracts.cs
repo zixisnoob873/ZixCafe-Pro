@@ -28,6 +28,12 @@ public interface ITerminalClient
     Task CaptureScreenFrame(Guid requestId);
 
     Task RemoteCommand(string command);
+
+    Task EnforceDisplayRefreshRate(int targetRefreshRateHz);
+
+    Task CoordinateDisklessWipe(string provider, bool rebootNow);
+
+    Task SetOfflineGracePeriod(int gracePeriodSeconds);
 }
 
 /// <summary>
@@ -48,6 +54,10 @@ public interface ITerminalServer
     Task ReportProhibitedAppKilledAsync(string processName);
 
     Task ReportUsbUsageAsync(long bytesTransferred);
+
+    Task ReportHardwareInventoryAsync(HardwareInventoryDto inventory);
+
+    Task ReportDisplaySettingsAsync(int activeRefreshRateHz, int maxSupportedHz, string resolution);
 }
 
 /// <summary>
@@ -201,4 +211,10 @@ public interface IDashboardServer
     Task<IReadOnlyList<BackupFileInfoDto>> ListBackupsAsync();
     Task<ResultResponse> RestoreBackupAsync(string backupFilePath, string cashierName);
     Task<string> GetDatabaseInfoAsync();
+
+    // Hardware & Diskless Ops
+    Task<HardwareBaselineDto?> GetTerminalHardwareAsync(Guid terminalId);
+    Task<ResultResponse> SetTerminalHardwareBaselineAsync(Guid terminalId, string requestingCashier);
+    Task<ResultResponse> EnforceTerminalRefreshRateAsync(Guid terminalId, string requestingCashier);
+    Task<ResultResponse> TriggerDisklessWipeAsync(Guid terminalId, string requestingCashier);
 }

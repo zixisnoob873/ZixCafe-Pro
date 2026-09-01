@@ -669,6 +669,38 @@
                             </StackPanel>
                         </Grid>
 
+                        <!-- Hardware Monitoring, Display Enforcer & Diskless Integrity -->
+                        <TextBlock Text="HARDWARE WATCHDOG, DISPLAY &amp; DISKLESS POLICIES" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,8,0,8" />
+                        <Border Background="{StaticResource RaisedBrush}" Padding="16,12" Margin="0,0,0,16" CornerRadius="4">
+                            <StackPanel>
+                                <CheckBox x:Name="SettingsHardwareWatchdog" Content="Enable Hardware Anti-Theft Watchdog (Alerts front desk immediately on RAM/GPU/Disk/USB swap)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
+                                <CheckBox x:Name="SettingsEnforceRefreshRate" Content="Auto-Enforce Native High Refresh Rate (240Hz/360Hz) on session start" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10" />
+                                <CheckBox x:Name="SettingsRebootOnEnd" Content="Reboot Terminal on Session End (Clean wipe &amp; cache preservation)" Foreground="{StaticResource InkBrush}" Margin="0,0,0,12" />
+                                
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="DISKLESS / RESTORE SYSTEM" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <ComboBox x:Name="SettingsDisklessProvider" Margin="0,4,0,0" FontSize="11">
+                                            <ComboBoxItem Content="None" IsSelected="True" />
+                                            <ComboBoxItem Content="DeepFreeze" />
+                                            <ComboBoxItem Content="ShadowDefender" />
+                                            <ComboBoxItem Content="CCBoot" />
+                                            <ComboBoxItem Content="iCafeCloud" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="OFFLINE GRACE PERIOD (SECONDS)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                        <TextBox x:Name="SettingsGracePeriod" Text="180" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <Button Content="Save Venue Settings" Style="{StaticResource GoldButton}" HorizontalAlignment="Left" Click="SaveSettings_Click" />
 
                         <!-- Database Backup & Data Care -->
@@ -759,6 +791,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <Grid Margin="18">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -861,15 +894,38 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- Add Extra POS Line to Session -->
+                    <!-- Hardware & Anti-Theft Integrity -->
                     <StackPanel Grid.Row="4" Margin="0,14,0,0">
+                        <TextBlock Text="HARDWARE &amp; DISPLAY INTEGRITY" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
+                        <Border Background="{StaticResource RaisedBrush}" Padding="8" CornerRadius="2">
+                            <StackPanel>
+                                <TextBlock x:Name="InspectorHwCpuGpu" Text="CPU/GPU: Scanning..." Style="{StaticResource MonoData}" FontSize="10" TextWrapping="Wrap" />
+                                <TextBlock x:Name="InspectorHwRamDisk" Text="RAM/Disk: Scanning..." Style="{StaticResource MonoData}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                <TextBlock x:Name="InspectorHwDisplay" Text="Display: Native Hz..." Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GoldBrush}" Margin="0,3,0,0" />
+                                <TextBlock x:Name="InspectorHwPeripherals" Text="Peripherals: Verified" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" Margin="0,3,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Set Baseline" Style="{StaticResource GhostButton}" FontSize="11" Click="SetHardwareBaseline_Click" />
+                            <Button Grid.Column="2" Content="Force Max Hz" Style="{StaticResource GhostButton}" FontSize="11" Click="EnforceRefreshRate_Click" />
+                        </Grid>
+                        <Button Content="Diskless Clean Wipe" Style="{StaticResource GhostButton}" FontSize="11" Margin="0,4,0,0" Click="TriggerDisklessWipe_Click" />
+                    </StackPanel>
+
+                    <!-- Add Extra POS Line to Session -->
+                    <StackPanel Grid.Row="5" Margin="0,14,0,0">
                         <TextBlock Text="ADD SNACK / DRINK (F6)" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
                         <ComboBox x:Name="ProductPicker" FontSize="11" DisplayMemberPath="Name" SelectedValuePath="Id" />
                         <Button Content="Add to Running Session" Style="{StaticResource GhostButton}" Margin="0,6,0,0" Click="AddProduct_Click" />
                     </StackPanel>
 
                     <!-- Chat Drawer -->
-                    <StackPanel Grid.Row="5" Margin="0,14,0,0">
+                    <StackPanel Grid.Row="6" Margin="0,14,0,0">
                         <TextBlock Text="CHAT THREAD (F8)" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
                         <ItemsControl x:Name="ChatItems" MaxHeight="130" ScrollViewer.VerticalScrollBarVisibility="Auto">
                             <ItemsControl.ItemTemplate>
