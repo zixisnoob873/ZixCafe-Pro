@@ -10,5 +10,6 @@
     <Company>ZixCafe</Company>
     <Product>ZixCafe Pro</Product>
     <Version>0.1.0</Version>
+    <NoWarn>$(NoWarn);NU1903;NU1510</NoWarn>
   </PropertyGroup>
 </Project>
