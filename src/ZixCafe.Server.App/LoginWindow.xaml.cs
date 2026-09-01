@@ -19,7 +19,30 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
+        NameInput.Text = "admin";
+        PinInput.Password = "1234";
         NameInput.Focus();
+    }
+
+    private void QuickSelectAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        NameInput.Text = "admin";
+        PinInput.Password = "1234";
+        SignIn_Click(sender, e);
+    }
+
+    private void QuickSelectManager_Click(object sender, RoutedEventArgs e)
+    {
+        NameInput.Text = "manager";
+        PinInput.Password = "2222";
+        SignIn_Click(sender, e);
+    }
+
+    private void QuickSelectStaff_Click(object sender, RoutedEventArgs e)
+    {
+        NameInput.Text = "demo";
+        PinInput.Password = "0000";
+        SignIn_Click(sender, e);
     }
 
     private async void SignIn_Click(object sender, RoutedEventArgs e)

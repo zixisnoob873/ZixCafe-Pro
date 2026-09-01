@@ -27,9 +27,22 @@
         <TextBlock x:Name="ErrorText" Text="" Foreground="{StaticResource AlertBrush}"
                    Style="{StaticResource BodyText}" FontSize="12" Margin="0,10,0,0"
                    TextWrapping="Wrap" Visibility="Collapsed" />
-        <Button x:Name="SignInButton" Content="Sign in" Style="{StaticResource GoldButton}"
+        <Button x:Name="SignInButton" Content="Sign In to Command Center" Style="{StaticResource GoldButton}"
                 HorizontalAlignment="Stretch" Margin="0,16,0,0" Click="SignIn_Click" />
-        <TextBlock Text="sample cashier: demo / 0000" Style="{StaticResource CapsLabel}"
-                   FontSize="10" Foreground="{StaticResource GhostBrush}" Margin="0,14,0,0" />
+
+        <TextBlock Text="QUICK CASHIER SELECT" Style="{StaticResource CapsLabel}"
+                   FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,18,0,6" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Content="Admin (Owner)" Style="{StaticResource GhostButton}" FontSize="10" Click="QuickSelectAdmin_Click" />
+            <Button Grid.Column="2" Content="Manager" Style="{StaticResource GhostButton}" FontSize="10" Click="QuickSelectManager_Click" />
+            <Button Grid.Column="4" Content="Staff Demo" Style="{StaticResource GhostButton}" FontSize="10" Click="QuickSelectStaff_Click" />
+        </Grid>
     </StackPanel>
 </Window>
