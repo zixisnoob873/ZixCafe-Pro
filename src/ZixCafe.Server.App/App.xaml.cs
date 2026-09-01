@@ -44,6 +44,7 @@ public partial class App : Application
             return;
         }
 
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         var login = new LoginWindow();
         if (login.ShowDialog() != true || login.AuthenticatedCashier is null)
         {
@@ -53,6 +54,7 @@ public partial class App : Application
 
         var window = new MainWindow(login.AuthenticatedCashier);
         MainWindow = window;
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();
     }
 
