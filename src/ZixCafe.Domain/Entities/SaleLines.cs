@@ -20,5 +20,7 @@ public class SaleLine
 
     public decimal UnitAmount { get; set; }
 
+    public decimal DiscountAmount { get; set; }
+
     public decimal Amount { get; set; }
 }

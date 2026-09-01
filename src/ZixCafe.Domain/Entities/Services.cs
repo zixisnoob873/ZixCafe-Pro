@@ -35,6 +35,10 @@ public class UsbTransferCharge
 
     public Session? Session { get; set; }
 
+    public Guid? TerminalId { get; set; }
+
+    public Terminal? Terminal { get; set; }
+
     public long BytesIn { get; set; }
 
     public long BytesOut { get; set; }

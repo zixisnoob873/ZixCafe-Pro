@@ -24,6 +24,10 @@ public interface ITerminalClient
     Task SessionPaused(DateTime serverUtcNow);
 
     Task SessionResumed(DateTime serverUtcNow, DateTime? plannedEndUtc);
+
+    Task CaptureScreenFrame(Guid requestId);
+
+    Task RemoteCommand(string command);
 }
 
 /// <summary>
@@ -38,6 +42,12 @@ public interface ITerminalServer
     Task SessionCountdownTickAsync(Guid sessionId, int minutesElapsed, decimal currentAmount);
 
     Task SendChatToDeskAsync(string message);
+
+    Task SubmitScreenFrameAsync(Guid requestId, byte[] jpegBytes);
+
+    Task ReportProhibitedAppKilledAsync(string processName);
+
+    Task ReportUsbUsageAsync(long bytesTransferred);
 }
 
 /// <summary>
@@ -49,11 +59,15 @@ public interface IDashboardClient
 
     Task AlertRaised(string severity, string kind, string message, Guid? terminalId, DateTime createdAtUtc);
 
+    Task AlertsUpdated(IReadOnlyList<AlertDto> alerts);
+
     Task SessionUpdated(Guid sessionId, Guid terminalId, string status, decimal amount, int minutesElapsed);
 
     Task ChatMessage(Guid terminalId, string fromName, string message, DateTime sentAtUtc);
 
     Task WaitlistChanged(IReadOnlyList<WaitlistEntryDto> waiting);
+
+    Task ScreenFrameReceived(Guid terminalId, byte[] jpegBytes);
 }
 
 /// <summary>
@@ -108,4 +122,81 @@ public interface IDashboardServer
     Task<LoanResponse> ReturnLoanAsync(Guid loanId, string returnedTo, string cashierName, bool forfeited);
 
     Task<ResultResponse> LockAllTerminalsAsync(string cashierName);
+
+    // Cashiers
+    Task<IReadOnlyList<CashierDto>> GetCashiersAsync();
+    Task<ResultResponse> CreateCashierAsync(CreateCashierRequest request, string requestingCashier);
+    Task<ResultResponse> UpdateCashierAsync(UpdateCashierRequest request, string requestingCashier);
+    Task<ResultResponse> VerifyManagerPinAsync(string pin);
+
+    // Venue Settings
+    Task<VenueSettingsDto> GetVenueSettingsAsync();
+    Task<ResultResponse> SaveVenueSettingsAsync(VenueSettingsDto settings, string requestingCashier);
+
+    // Tariffs
+    Task<IReadOnlyList<TariffDto>> GetTariffsAsync();
+    Task<ResultResponse> SaveTariffAsync(SaveTariffRequest request, string requestingCashier);
+    Task<ResultResponse> DeleteTariffAsync(Guid tariffId, string requestingCashier);
+
+    // POS & Retail Sales
+    Task<ResultResponse> CreateSaleAsync(CreateSaleRequest request);
+    Task<IReadOnlyList<SaleSummaryDto>> GetRecentSalesAsync(int limit);
+    Task<SaleDetailDto?> GetSaleDetailAsync(Guid saleId);
+
+    // Tickets
+    Task<IReadOnlyList<TicketDto>> GetTicketsAsync(bool unusedOnly);
+    Task<ResultResponse> SellTicketAsync(SellTicketRequest request);
+    Task<ResultResponse> BatchGenerateTicketsAsync(BatchGenerateTicketsRequest request);
+    Task<ResultResponse> VoidTicketAsync(Guid ticketId, string cashierName, string managerPin);
+
+    // Members
+    Task<IReadOnlyList<MemberDetailDto>> GetMembersAsync(string? search);
+    Task<MemberDetailDto?> GetMemberDetailAsync(Guid memberId);
+    Task<ResultResponse> SaveMemberAsync(SaveMemberRequest request, string requestingCashier);
+    Task<ResultResponse> TopUpMemberAsync(MemberTopUpRequest request);
+    Task<IReadOnlyList<MemberTransactionDto>> GetMemberTransactionsAsync(Guid memberId);
+    Task<IReadOnlyList<MemberTierDto>> GetMemberTiersAsync();
+    Task<ResultResponse> SetMemberFrozenAsync(Guid memberId, bool isFrozen, string requestingCashier);
+
+    // Inventory
+    Task<IReadOnlyList<ProductDetailDto>> GetProductsFullAsync();
+    Task<ResultResponse> SaveProductAsync(SaveProductRequest request, string requestingCashier);
+    Task<ResultResponse> AdjustStockAsync(StockAdjustmentRequest request);
+    Task<IReadOnlyList<StockMovementDto>> GetStockMovementsAsync(Guid? productId, int limit);
+
+    // Print & USB
+    Task<IReadOnlyList<PrintJobDto>> GetPrintJobsAsync();
+    Task<ResultResponse> ReleasePrintJobAsync(Guid printJobId, string paymentMethod, string cashierName);
+    Task<ResultResponse> CancelPrintJobAsync(Guid printJobId, string reason, string cashierName);
+
+    // Reports & Audit
+    Task<ShiftReportDto?> GetShiftReportAsync(Guid shiftId);
+    Task<IReadOnlyList<DailyRevenueDto>> GetDailyRevenueReportAsync(DateTime fromDateUtc, DateTime toDateUtc);
+    Task<IReadOnlyList<SessionHistoryDto>> GetSessionHistoryAsync(DateTime fromDateUtc, DateTime toDateUtc, Guid? terminalId);
+    Task<IReadOnlyList<AuditEntryDto>> GetAuditEntriesAsync(int limit);
+    Task<AuditVerificationResult> VerifyAuditChainAsync();
+
+    // Alerts
+    Task<IReadOnlyList<AlertDto>> GetAlertsAsync();
+    Task<ResultResponse> AcknowledgeAlertAsync(Guid alertId, string cashierName);
+    Task<ResultResponse> MuteAlertKindAsync(string kind, int minutes);
+
+    // Remote Ops
+    Task<ResultResponse> RequestScreenViewAsync(Guid terminalId, string requestingCashier);
+    Task<ResultResponse> ExecuteRemoteActionAsync(RemoteActionRequest request);
+    Task<IReadOnlyList<ProhibitedAppDto>> GetProhibitedAppsAsync();
+    Task<ResultResponse> SaveProhibitedAppAsync(string match, string matchKind, bool killOnSight, string requestingCashier);
+    Task<ResultResponse> DeleteProhibitedAppAsync(Guid id, string requestingCashier);
+
+    // Maintenance & Reservations
+    Task<ResultResponse> SetTerminalMaintenanceAsync(SetTerminalMaintenanceRequest request);
+    Task<ResultResponse> ReserveTerminalAsync(ReserveTerminalRequest request);
+    Task<ResultResponse> ReleaseReservationAsync(Guid terminalId, string cashierName);
+
+    // Chat
+    Task<IReadOnlyList<ChatHistoryItemDto>> GetChatHistoryAsync(Guid terminalId, Guid? sessionId);
+
+    // Database & Backup
+    Task<ResultResponse> TriggerBackupAsync(string? targetDirectory, string cashierName);
+    Task<string> GetDatabaseInfoAsync();
 }

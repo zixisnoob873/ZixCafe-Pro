@@ -25,6 +25,8 @@ public class Member
 
     public string? Phone { get; set; }
 
+    public string? Email { get; set; }
+
     public string? PinHash { get; set; }
 
     public Guid? TierId { get; set; }
@@ -34,6 +36,10 @@ public class Member
     public decimal MoneyBalance { get; set; }
 
     public int TimeBalanceMinutes { get; set; }
+
+    public bool IsFrozen { get; set; }
+
+    public string? Notes { get; set; }
 
     public bool IsActive { get; set; } = true;
 

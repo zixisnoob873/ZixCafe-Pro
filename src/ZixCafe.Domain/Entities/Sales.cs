@@ -24,6 +24,14 @@ public class Sale
 
     public decimal PaidCard { get; set; }
 
+    public string? CashierName { get; set; }
+
+    public string? CustomerName { get; set; }
+
+    public decimal ChangeDue { get; set; }
+
+    public string PaymentMethod { get; set; } = "Cash";
+
     public decimal PaidQr { get; set; }
 
     public string? Note { get; set; }

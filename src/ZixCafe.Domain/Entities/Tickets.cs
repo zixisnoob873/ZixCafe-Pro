@@ -29,4 +29,6 @@ public class TicketVoucher
     public string? IssuedBy { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? ExpiresAt { get; set; }
 }

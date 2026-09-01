@@ -16,6 +16,8 @@ public class Product
 
     public int LowStockThreshold { get; set; }
 
+    public string Category { get; set; } = "General";
+
     public bool IsActive { get; set; } = true;
 
     public List<StockMovement> Movements { get; set; } = [];

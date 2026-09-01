@@ -78,7 +78,8 @@ public enum PrintStatus
     Queued = 0,
     Released = 1,
     Printed = 2,
-    Failed = 3
+    Failed = 3,
+    Cancelled = 4
 }
 
 public enum LoanStatus

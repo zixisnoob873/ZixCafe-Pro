@@ -29,6 +29,9 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
     public DbSet<ProhibitedApp> ProhibitedApps => Set<ProhibitedApp>();
     public DbSet<Setting> Settings => Set<Setting>();
     public DbSet<WaitQueueEntry> WaitQueue => Set<WaitQueueEntry>();
+    public DbSet<VenueSettings> VenueSettings => Set<VenueSettings>();
+    public DbSet<ChatEntry> ChatEntries => Set<ChatEntry>();
+    public DbSet<AlertMute> AlertMutes => Set<AlertMute>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -157,6 +160,7 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
             e.HasIndex(p => p.Sku).IsUnique();
             e.Property(p => p.Sku).HasMaxLength(30).IsRequired();
             e.Property(p => p.Name).HasMaxLength(120).IsRequired();
+            e.Property(p => p.Category).HasMaxLength(60).IsRequired();
             e.Property(p => p.Price).HasPrecision(18, 4);
         });
 
@@ -179,6 +183,10 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
             e.Property(s => s.PaidCash).HasPrecision(18, 4);
             e.Property(s => s.PaidCard).HasPrecision(18, 4);
             e.Property(s => s.PaidQr).HasPrecision(18, 4);
+            e.Property(s => s.ChangeDue).HasPrecision(18, 4);
+            e.Property(s => s.PaymentMethod).HasMaxLength(30).IsRequired();
+            e.Property(s => s.CashierName).HasMaxLength(120);
+            e.Property(s => s.CustomerName).HasMaxLength(120);
             e.Property(s => s.Note).HasMaxLength(300);
             e.HasOne(s => s.Session)
                 .WithMany()
@@ -195,6 +203,7 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
         {
             e.Property(l => l.Quantity).HasPrecision(18, 4);
             e.Property(l => l.UnitAmount).HasPrecision(18, 4);
+            e.Property(l => l.DiscountAmount).HasPrecision(18, 4);
             e.Property(l => l.Amount).HasPrecision(18, 4);
             e.Property(l => l.Description).HasMaxLength(200).IsRequired();
             e.HasOne(l => l.Sale)
@@ -281,6 +290,36 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
             e.Property(q => q.GuestName).HasMaxLength(120).IsRequired();
             e.Property(q => q.Contact).HasMaxLength(120);
             e.Property(q => q.ServedBy).HasMaxLength(120);
+        });
+
+        modelBuilder.Entity<VenueSettings>(e =>
+        {
+            e.Property(v => v.VenueName).HasMaxLength(120).IsRequired();
+            e.Property(v => v.CurrencyCode).HasMaxLength(10).IsRequired();
+            e.Property(v => v.CurrencySymbol).HasMaxLength(10).IsRequired();
+            e.Property(v => v.Locale).HasMaxLength(20).IsRequired();
+            e.Property(v => v.TaxLabel).HasMaxLength(30).IsRequired();
+            e.Property(v => v.TaxRatePercent).HasPrecision(5, 2);
+            e.Property(v => v.DefaultOpeningFloat).HasPrecision(18, 4);
+            e.Property(v => v.UsbRatePerGb).HasPrecision(18, 4);
+            e.Property(v => v.PrintCostPerPage).HasPrecision(18, 4);
+            e.Property(v => v.ClosingTime).HasMaxLength(10).IsRequired();
+            e.Property(v => v.LicenseKey).HasMaxLength(200);
+            e.Property(v => v.AutoBackupPath).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<ChatEntry>(e =>
+        {
+            e.Property(c => c.FromName).HasMaxLength(120).IsRequired();
+            e.Property(c => c.Message).HasMaxLength(1000).IsRequired();
+            e.HasIndex(c => new { c.TerminalId, c.SentAtUtc });
+            e.HasIndex(c => c.SessionId);
+        });
+
+        modelBuilder.Entity<AlertMute>(e =>
+        {
+            e.Property(a => a.Kind).HasMaxLength(40).IsRequired();
+            e.HasIndex(a => a.Kind).IsUnique();
         });
     }
 }

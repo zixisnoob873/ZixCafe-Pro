@@ -60,6 +60,8 @@ public class Cashier
 
     public bool IsActive { get; set; } = true;
 
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public List<Shift> Shifts { get; set; } = [];
 }
 

@@ -25,8 +25,23 @@ public static class DbInitializer
 
     private static async Task SeedAsync(ZixCafeDbContext db)
     {
+        db.VenueSettings.Add(new VenueSettings
+        {
+            VenueName = "ZixCafe Venue [SAMPLE]",
+            CurrencyCode = "USD",
+            CurrencySymbol = "$",
+            Locale = "en-US",
+            TaxLabel = "TAX",
+            TaxRatePercent = 0m,
+            DefaultOpeningFloat = 50.00m,
+            UsbRatePerGb = 1.00m,
+            PrintCostPerPage = 0.10m,
+            ClosingTime = "02:00",
+            IsConfigured = true
+        });
+
         db.Settings.AddRange(
-            new Setting { Key = "venue.name", Value = "ZixCafe Venue" },
+            new Setting { Key = "venue.name", Value = "ZixCafe Venue [SAMPLE]" },
             new Setting { Key = "venue.currency", Value = "USD" },
             new Setting { Key = "venue.locale", Value = "en-US" },
             new Setting { Key = "server.port", Value = "40000" },
@@ -74,7 +89,7 @@ public static class DbInitializer
 
         var flatTariff = new Tariff
         {
-            Name = "Standard Hourly",
+            Name = "Standard Hourly [SAMPLE]",
             Model = TariffModel.Flat,
             BaseRatePerHour = 2.00m,
             RoundingMinutes = 5,
@@ -83,7 +98,7 @@ public static class DbInitializer
         };
         var peakTariff = new Tariff
         {
-            Name = "Peak Hours",
+            Name = "Peak Hours [SAMPLE]",
             Model = TariffModel.DaySchedule,
             BaseRatePerHour = 2.00m,
             RoundingMinutes = 5,
@@ -99,30 +114,31 @@ public static class DbInitializer
 
         var tiers = new[]
         {
-            new MemberTier { Name = "Bronze", DiscountPercent = 0m, Priority = 1 },
-            new MemberTier { Name = "Silver", DiscountPercent = 5m, MinTopUpAmount = 20m, Priority = 2 },
-            new MemberTier { Name = "Gold", DiscountPercent = 10m, MinTopUpAmount = 50m, Priority = 3 }
+            new MemberTier { Name = "Bronze [SAMPLE]", DiscountPercent = 0m, Priority = 1 },
+            new MemberTier { Name = "Silver [SAMPLE]", DiscountPercent = 5m, MinTopUpAmount = 20m, Priority = 2 },
+            new MemberTier { Name = "Gold [SAMPLE]", DiscountPercent = 10m, MinTopUpAmount = 50m, Priority = 3 }
         };
         db.MemberTiers.AddRange(tiers);
 
         db.Cashiers.AddRange(
             new Cashier { Name = "admin", PinHash = SecretHasher.Hash("1234"), Role = CashierRole.Owner },
+            new Cashier { Name = "manager", PinHash = SecretHasher.Hash("2222"), Role = CashierRole.Manager },
             new Cashier { Name = "demo", PinHash = SecretHasher.Hash("0000"), Role = CashierRole.Staff });
 
         db.Members.Add(new Member
         {
             Code = "M-0001",
-            Name = "Sample Member",
+            Name = "Sample Member [SAMPLE]",
             TimeBalanceMinutes = 300,
             MoneyBalance = 25.00m
         });
 
         db.Products.AddRange(
-            new Product { Sku = "BEV-001", Name = "Energy Drink 250ml", Price = 2.50m, StockQty = 120, LowStockThreshold = 24 },
-            new Product { Sku = "BEV-002", Name = "Bottled Water 500ml", Price = 1.00m, StockQty = 200, LowStockThreshold = 40 },
-            new Product { Sku = "SNK-001", Name = "Chips Regular", Price = 1.50m, StockQty = 80, LowStockThreshold = 16 },
-            new Product { Sku = "SNK-002", Name = "Instant Noodles", Price = 1.25m, StockQty = 60, LowStockThreshold = 12 },
-            new Product { Sku = "PER-001", Name = "Gaming Headset (loan)", Price = 0m, StockQty = 10, LowStockThreshold = 2 });
+            new Product { Sku = "BEV-001", Name = "Energy Drink 250ml [SAMPLE]", Category = "Drinks", Price = 2.50m, StockQty = 120, LowStockThreshold = 24 },
+            new Product { Sku = "BEV-002", Name = "Bottled Water 500ml [SAMPLE]", Category = "Drinks", Price = 1.00m, StockQty = 200, LowStockThreshold = 40 },
+            new Product { Sku = "SNK-001", Name = "Chips Regular [SAMPLE]", Category = "Snacks", Price = 1.50m, StockQty = 80, LowStockThreshold = 16 },
+            new Product { Sku = "SNK-002", Name = "Instant Noodles [SAMPLE]", Category = "Snacks", Price = 1.25m, StockQty = 60, LowStockThreshold = 12 },
+            new Product { Sku = "PER-001", Name = "Gaming Headset (loan) [SAMPLE]", Category = "Accessories", Price = 0m, StockQty = 10, LowStockThreshold = 2 });
 
         db.ProhibitedApps.AddRange(
             new ProhibitedApp { Match = "cheatengine", MatchKind = "ProcessName", KillOnSight = true },

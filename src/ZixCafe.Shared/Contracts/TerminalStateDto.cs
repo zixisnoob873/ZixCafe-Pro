@@ -15,7 +15,13 @@ public record TerminalStateDto(
     int MinutesElapsed,
     int? MinutesRemaining,
     DateTime? PlannedEndAt,
-    bool Paused = false);
+    bool Paused = false,
+    string? MaintenanceReason = null,
+    string? ReservedFor = null,
+    int? CpuTemp = null,
+    int? GpuTemp = null,
+    int? RamPercent = null,
+    int? DiskFreeGb = null);
 
 public enum TerminalStatusDto
 {

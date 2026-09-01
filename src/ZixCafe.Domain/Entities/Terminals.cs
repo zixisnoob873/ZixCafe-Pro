@@ -35,6 +35,20 @@ public class Terminal
 
     public string? AgentVersion { get; set; }
 
+    public string? MaintenanceReason { get; set; }
+ 
+    public DateTime? ReservedUntilUtc { get; set; }
+ 
+    public string? ReservedFor { get; set; }
+ 
+    public int? CpuTemp { get; set; }
+ 
+    public int? GpuTemp { get; set; }
+ 
+    public int? RamPercent { get; set; }
+ 
+    public int? DiskFreeGb { get; set; }
+ 
     public string? HardwareProfileJson { get; set; }
 
     public DateTime? LastSeenAt { get; set; }
