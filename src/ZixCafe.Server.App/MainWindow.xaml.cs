@@ -258,7 +258,7 @@ public partial class MainWindow : Window
     private void NavRack_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        RackView.Visibility = Visibility.Visible;
+        if (RackView is not null) RackView.Visibility = Visibility.Visible;
     }
 
     private void Tile_Click(object sender, MouseButtonEventArgs e)
@@ -664,8 +664,8 @@ public partial class MainWindow : Window
     private async void NavDesk_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        DeskView.Visibility = Visibility.Visible;
-        await RefreshDeskAsync();
+        if (DeskView is not null) DeskView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshDeskAsync();
     }
 
     private async Task RefreshDeskAsync()
@@ -796,8 +796,8 @@ public partial class MainWindow : Window
     private async void NavSales_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        SalesView.Visibility = Visibility.Visible;
-        await RefreshProductsAsync();
+        if (SalesView is not null) SalesView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshProductsAsync();
     }
 
     private async Task RefreshProductsAsync()
@@ -924,8 +924,8 @@ public partial class MainWindow : Window
     private async void NavTickets_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        TicketsView.Visibility = Visibility.Visible;
-        await RefreshTicketsAsync();
+        if (TicketsView is not null) TicketsView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshTicketsAsync();
     }
 
     private async Task RefreshTicketsAsync()
@@ -990,8 +990,8 @@ public partial class MainWindow : Window
     private async void NavMembers_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        MembersView.Visibility = Visibility.Visible;
-        await RefreshMembersAsync();
+        if (MembersView is not null) MembersView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshMembersAsync();
     }
 
     private async Task RefreshMembersAsync()
@@ -1054,8 +1054,8 @@ public partial class MainWindow : Window
     private async void NavInventory_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        InventoryView.Visibility = Visibility.Visible;
-        await RefreshProductsAsync();
+        if (InventoryView is not null) InventoryView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshProductsAsync();
     }
 
     private void InvSearch_TextChanged(object sender, TextChangedEventArgs e) => FilterInventory();
@@ -1104,8 +1104,8 @@ public partial class MainWindow : Window
     private async void NavPeripherals_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        PeripheralsView.Visibility = Visibility.Visible;
-        await RefreshPeripheralsAsync();
+        if (PeripheralsView is not null) PeripheralsView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshPeripheralsAsync();
     }
 
     private async Task RefreshPeripheralsAsync()
@@ -1136,8 +1136,8 @@ public partial class MainWindow : Window
     private async void NavReports_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        ReportsView.Visibility = Visibility.Visible;
-        await RefreshReportsAsync();
+        if (ReportsView is not null) ReportsView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshReportsAsync();
     }
 
     private async Task RefreshReportsAsync()
@@ -1219,7 +1219,7 @@ public partial class MainWindow : Window
     private void NavAlerts_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        AlertsView.Visibility = Visibility.Visible;
+        if (AlertsView is not null) AlertsView.Visibility = Visibility.Visible;
     }
 
     private void AckAllAlerts_Click(object sender, RoutedEventArgs e)
@@ -1233,8 +1233,8 @@ public partial class MainWindow : Window
     private async void NavSettings_Checked(object sender, RoutedEventArgs e)
     {
         HideAllViews();
-        SettingsView.Visibility = Visibility.Visible;
-        await RefreshSettingsViewAsync();
+        if (SettingsView is not null) SettingsView.Visibility = Visibility.Visible;
+        if (_dashboard is not null) await RefreshSettingsViewAsync();
     }
 
     private void PopulateConfigFields(MasterSystemSettingsDto cfg)
@@ -1610,16 +1610,16 @@ public partial class MainWindow : Window
 
     private void HideAllViews()
     {
-        RackView.Visibility = Visibility.Collapsed;
-        DeskView.Visibility = Visibility.Collapsed;
-        SalesView.Visibility = Visibility.Collapsed;
-        TicketsView.Visibility = Visibility.Collapsed;
-        MembersView.Visibility = Visibility.Collapsed;
-        InventoryView.Visibility = Visibility.Collapsed;
-        PeripheralsView.Visibility = Visibility.Collapsed;
-        ReportsView.Visibility = Visibility.Collapsed;
-        AlertsView.Visibility = Visibility.Collapsed;
-        SettingsView.Visibility = Visibility.Collapsed;
+        if (RackView is not null) RackView.Visibility = Visibility.Collapsed;
+        if (DeskView is not null) DeskView.Visibility = Visibility.Collapsed;
+        if (SalesView is not null) SalesView.Visibility = Visibility.Collapsed;
+        if (TicketsView is not null) TicketsView.Visibility = Visibility.Collapsed;
+        if (MembersView is not null) MembersView.Visibility = Visibility.Collapsed;
+        if (InventoryView is not null) InventoryView.Visibility = Visibility.Collapsed;
+        if (PeripheralsView is not null) PeripheralsView.Visibility = Visibility.Collapsed;
+        if (ReportsView is not null) ReportsView.Visibility = Visibility.Collapsed;
+        if (AlertsView is not null) AlertsView.Visibility = Visibility.Collapsed;
+        if (SettingsView is not null) SettingsView.Visibility = Visibility.Collapsed;
     }
 
     private string? PromptString(string title, string label)

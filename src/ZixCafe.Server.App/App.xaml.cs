@@ -68,6 +68,40 @@ public partial class App : Application
             return;
         }
 
+        var captureArg = e.Args.FirstOrDefault(a => a.StartsWith("--test-capture="));
+        if (captureArg is not null)
+        {
+            var targetPath = captureArg["--test-capture=".Length..];
+            try
+            {
+                var dbFactory = Services.GetRequiredService<IDbContextFactory<ZixCafeDbContext>>();
+                await using var db = await dbFactory.CreateDbContextAsync();
+                var admin = await db.Cashiers.FirstAsync(c => c.Name == "admin");
+                var captureWindow = new MainWindow(admin);
+                MainWindow = captureWindow;
+                captureWindow.Width = 1440;
+                captureWindow.Height = 900;
+                captureWindow.Show();
+                captureWindow.UpdateLayout();
+
+                await Task.Delay(1500);
+
+                var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(1440, 900, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtb.Render(captureWindow);
+                var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+                using var fs = File.Create(targetPath);
+                enc.Save(fs);
+                Console.WriteLine($"CAPTURE_SUCCESS: {targetPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"CAPTURE_ERROR: {ex}");
+            }
+            Shutdown(0);
+            return;
+        }
+
         var login = new LoginWindow();
         if (login.ShowDialog() != true || login.AuthenticatedCashier is null)
         {
