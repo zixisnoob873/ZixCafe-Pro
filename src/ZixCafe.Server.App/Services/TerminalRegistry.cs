@@ -77,6 +77,9 @@ public class TerminalRegistry
     public TerminalConnection? Get(Guid terminalId)
         => _connections.TryGetValue(terminalId, out var conn) ? conn : null;
 
+    public string? GetConnectionId(Guid terminalId)
+        => _connections.TryGetValue(terminalId, out var conn) ? conn.ConnectionId : null;
+
     public IReadOnlyCollection<TerminalConnection> All => _connections.Values.ToList();
 
     public void RaiseState(TerminalStateDto state) => StateChanged?.Invoke(state);

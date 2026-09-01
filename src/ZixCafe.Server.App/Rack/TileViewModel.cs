@@ -45,6 +45,15 @@ public partial class TileViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    [ObservableProperty]
+    private int? _cpuTemp;
+
+    [ObservableProperty]
+    private int? _ramPercent;
+
+    [ObservableProperty]
+    private int? _diskFreeGb;
+
     public bool IsRunning => Status == TerminalStatusDto.InUse;
 
     public Guid? ActiveSessionId { get; private set; }
@@ -77,6 +86,9 @@ public partial class TileViewModel : ObservableObject
         IsPaused = dto.Paused;
         IsOnline = dto.LastSeenAt is { } seen && DateTime.UtcNow - seen < TimeSpan.FromSeconds(45);
         ActiveSessionId = dto.ActiveSessionId;
+        CpuTemp = dto.CpuTemp;
+        RamPercent = dto.RamPercent;
+        DiskFreeGb = dto.DiskFreeGb;
 
         _plannedEndAtUtc = dto.PlannedEndAt;
         _lastSyncUtc = dto.LastSeenAt ?? DateTime.UtcNow;

@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using ZixCafe.Domain.Entities;
+using ZixCafe.Domain.Enums;
+using ZixCafe.Domain.Services;
 using ZixCafe.Infrastructure;
-using ZixCafe.Server.App.Hubs;
 using ZixCafe.Server.App.Services;
 using ZixCafe.Shared.Contracts;
 using ZixCafe.Shared.Hubs;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ZixCafe.Server.App.Hubs;
 
@@ -15,19 +17,61 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
     private readonly SessionService _sessions;
     private readonly DeskService _desk;
     private readonly IHubContext<TerminalHub, ITerminalClient> _terminals;
+    private readonly AuthAndCashierService _auth;
+    private readonly VenueSettingsService _venueSettings;
+    private readonly TariffService _tariffs;
+    private readonly SalesAndPosService _sales;
+    private readonly TicketService _tickets;
+    private readonly MemberManagementService _members;
+    private readonly InventoryService _inventory;
+    private readonly PeripheralMeteringService _peripherals;
+    private readonly ReportsAndAuditService _reports;
+    private readonly AlertsCenterService _alerts;
+    private readonly RemoteOpsService _remoteOps;
+    private readonly MaintenanceAndReservationService _maintenance;
+    private readonly ChatHistoryService _chatHistory;
+    private readonly DataCareAndBackupService _backup;
 
     public DashboardHub(
         IDbContextFactory<ZixCafeDbContext> dbFactory,
         TerminalRegistry registry,
         SessionService sessions,
         DeskService desk,
-        IHubContext<TerminalHub, ITerminalClient> terminals)
+        IHubContext<TerminalHub, ITerminalClient> terminals,
+        AuthAndCashierService auth,
+        VenueSettingsService venueSettings,
+        TariffService tariffs,
+        SalesAndPosService sales,
+        TicketService tickets,
+        MemberManagementService members,
+        InventoryService inventory,
+        PeripheralMeteringService peripherals,
+        ReportsAndAuditService reports,
+        AlertsCenterService alerts,
+        RemoteOpsService remoteOps,
+        MaintenanceAndReservationService maintenance,
+        ChatHistoryService chatHistory,
+        DataCareAndBackupService backup)
     {
         _dbFactory = dbFactory;
         _registry = registry;
         _sessions = sessions;
         _desk = desk;
         _terminals = terminals;
+        _auth = auth;
+        _venueSettings = venueSettings;
+        _tariffs = tariffs;
+        _sales = sales;
+        _tickets = tickets;
+        _members = members;
+        _inventory = inventory;
+        _peripherals = peripherals;
+        _reports = reports;
+        _alerts = alerts;
+        _remoteOps = remoteOps;
+        _maintenance = maintenance;
+        _chatHistory = chatHistory;
+        _backup = backup;
     }
 
     public async Task SubscribeAsync()
@@ -63,12 +107,13 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
             return;
         }
         var sentAt = DateTime.UtcNow;
+        await _chatHistory.SaveChatAsync(terminalId, null, "Front desk", message, false);
         await _terminals.Clients.Group(TerminalGroups.Terminal(terminalId)).ChatMessage("Front desk", message, sentAt);
         await Clients.Others.ChatMessage(terminalId, "Front desk", message, sentAt);
     }
 
     public Task<LoginResponse> LoginAsync(LoginRequest request)
-        => Task.FromResult(_sessions.Login(request));
+        => _auth.LoginAsync(request);
 
     public Task<ResultResponse> PauseSessionAsync(Guid terminalId, string cashierName)
         => _sessions.PauseAsync(terminalId, cashierName);
@@ -118,35 +163,229 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
     public Task<ResultResponse> LockAllTerminalsAsync(string cashierName)
         => _desk.LockAllTerminalsAsync(cashierName);
 
+    // Cashiers
+    public Task<IReadOnlyList<CashierDto>> GetCashiersAsync()
+        => _auth.GetCashiersAsync();
+
+    public Task<ResultResponse> CreateCashierAsync(CreateCashierRequest request, string requestingCashier)
+        => _auth.CreateCashierAsync(request, requestingCashier);
+
+    public Task<ResultResponse> UpdateCashierAsync(UpdateCashierRequest request, string requestingCashier)
+        => _auth.UpdateCashierAsync(request, requestingCashier);
+
+    public async Task<ResultResponse> VerifyManagerPinAsync(string pin)
+    {
+        var ok = await _auth.VerifyManagerPinAsync(pin);
+        return new ResultResponse(ok, ok ? null : "Invalid Manager PIN.");
+    }
+
+    // Venue Settings
+    public Task<VenueSettingsDto> GetVenueSettingsAsync()
+        => _venueSettings.GetSettingsDtoAsync();
+
+    public Task<ResultResponse> SaveVenueSettingsAsync(VenueSettingsDto settings, string requestingCashier)
+        => _venueSettings.SaveSettingsAsync(settings, requestingCashier);
+
+    // Tariffs
+    public Task<IReadOnlyList<TariffDto>> GetTariffsAsync()
+        => _tariffs.GetTariffsAsync();
+
+    public Task<ResultResponse> SaveTariffAsync(SaveTariffRequest request, string requestingCashier)
+        => _tariffs.SaveTariffAsync(request, requestingCashier);
+
+    public Task<ResultResponse> DeleteTariffAsync(Guid tariffId, string requestingCashier)
+        => _tariffs.DeleteTariffAsync(tariffId, requestingCashier);
+
+    // POS & Retail Sales
+    public Task<ResultResponse> CreateSaleAsync(CreateSaleRequest request)
+        => _sales.CreateSaleAsync(request);
+
+    public Task<IReadOnlyList<SaleSummaryDto>> GetRecentSalesAsync(int limit)
+        => _sales.GetRecentSalesAsync(limit);
+
+    public Task<SaleDetailDto?> GetSaleDetailAsync(Guid saleId)
+        => _sales.GetSaleDetailAsync(saleId);
+
+    // Tickets
+    public Task<IReadOnlyList<TicketDto>> GetTicketsAsync(bool unusedOnly)
+        => _tickets.GetTicketsAsync(unusedOnly);
+
+    public Task<ResultResponse> SellTicketAsync(SellTicketRequest request)
+        => _tickets.SellTicketAsync(request);
+
+    public Task<ResultResponse> BatchGenerateTicketsAsync(BatchGenerateTicketsRequest request)
+        => _tickets.BatchGenerateTicketsAsync(request);
+
+    public Task<ResultResponse> VoidTicketAsync(Guid ticketId, string cashierName, string managerPin)
+        => _tickets.VoidTicketAsync(ticketId, cashierName, managerPin);
+
+    // Members
+    public Task<IReadOnlyList<MemberDetailDto>> GetMembersAsync(string? search)
+        => _members.GetMembersAsync(search);
+
+    public Task<MemberDetailDto?> GetMemberDetailAsync(Guid memberId)
+        => _members.GetMemberDetailAsync(memberId);
+
+    public Task<ResultResponse> SaveMemberAsync(SaveMemberRequest request, string requestingCashier)
+        => _members.SaveMemberAsync(request, requestingCashier);
+
+    public Task<ResultResponse> TopUpMemberAsync(MemberTopUpRequest request)
+        => _members.TopUpMemberAsync(request);
+
+    public Task<IReadOnlyList<MemberTransactionDto>> GetMemberTransactionsAsync(Guid memberId)
+        => _members.GetMemberTransactionsAsync(memberId);
+
+    public Task<IReadOnlyList<MemberTierDto>> GetMemberTiersAsync()
+        => _members.GetMemberTiersAsync();
+
+    public Task<ResultResponse> SetMemberFrozenAsync(Guid memberId, bool isFrozen, string requestingCashier)
+        => _members.SetMemberFrozenAsync(memberId, isFrozen, requestingCashier);
+
+    // Inventory
+    public Task<IReadOnlyList<ProductDetailDto>> GetProductsFullAsync()
+        => _inventory.GetProductsFullAsync();
+
+    public Task<ResultResponse> SaveProductAsync(SaveProductRequest request, string requestingCashier)
+        => _inventory.SaveProductAsync(request, requestingCashier);
+
+    public Task<ResultResponse> AdjustStockAsync(StockAdjustmentRequest request)
+        => _inventory.AdjustStockAsync(request);
+
+    public Task<IReadOnlyList<StockMovementDto>> GetStockMovementsAsync(Guid? productId, int limit)
+        => _inventory.GetStockMovementsAsync(productId, limit);
+
+    // Print & USB
+    public Task<IReadOnlyList<PrintJobDto>> GetPrintJobsAsync()
+        => _peripherals.GetPrintJobsAsync();
+
+    public Task<ResultResponse> ReleasePrintJobAsync(Guid printJobId, string paymentMethod, string cashierName)
+        => _peripherals.ReleasePrintJobAsync(printJobId, paymentMethod, cashierName);
+
+    public Task<ResultResponse> CancelPrintJobAsync(Guid printJobId, string reason, string cashierName)
+        => _peripherals.CancelPrintJobAsync(printJobId, reason, cashierName);
+
+    // Reports & Audit
+    public Task<ShiftReportDto?> GetShiftReportAsync(Guid shiftId)
+        => _reports.GetShiftReportAsync(shiftId);
+
+    public Task<IReadOnlyList<DailyRevenueDto>> GetDailyRevenueReportAsync(DateTime fromDateUtc, DateTime toDateUtc)
+        => _reports.GetDailyRevenueReportAsync(fromDateUtc, toDateUtc);
+
+    public Task<IReadOnlyList<SessionHistoryDto>> GetSessionHistoryAsync(DateTime fromDateUtc, DateTime toDateUtc, Guid? terminalId)
+        => _reports.GetSessionHistoryAsync(fromDateUtc, toDateUtc, terminalId);
+
+    public Task<IReadOnlyList<AuditEntryDto>> GetAuditEntriesAsync(int limit)
+        => _reports.GetAuditEntriesAsync(limit);
+
+    public Task<AuditVerificationResult> VerifyAuditChainAsync()
+        => _reports.VerifyAuditChainAsync();
+
+    // Alerts
+    public Task<IReadOnlyList<AlertDto>> GetAlertsAsync()
+        => _alerts.GetAlertsAsync();
+
+    public Task<ResultResponse> AcknowledgeAlertAsync(Guid alertId, string cashierName)
+        => _alerts.AcknowledgeAlertAsync(alertId, cashierName);
+
+    public Task<ResultResponse> MuteAlertKindAsync(string kind, int minutes)
+        => _alerts.MuteAlertKindAsync(kind, minutes);
+
+    // Remote Ops
+    public Task<ResultResponse> RequestScreenViewAsync(Guid terminalId, string requestingCashier)
+        => _remoteOps.RequestScreenViewAsync(terminalId, requestingCashier);
+
+    public Task<ResultResponse> ExecuteRemoteActionAsync(RemoteActionRequest request)
+        => _remoteOps.ExecuteRemoteActionAsync(request);
+
+    public Task<IReadOnlyList<ProhibitedAppDto>> GetProhibitedAppsAsync()
+        => _remoteOps.GetProhibitedAppsAsync();
+
+    public Task<ResultResponse> SaveProhibitedAppAsync(string match, string matchKind, bool killOnSight, string requestingCashier)
+        => _remoteOps.SaveProhibitedAppAsync(match, matchKind, killOnSight, requestingCashier);
+
+    public Task<ResultResponse> DeleteProhibitedAppAsync(Guid id, string requestingCashier)
+        => _remoteOps.DeleteProhibitedAppAsync(id, requestingCashier);
+
+    // Maintenance & Reservations
+    public Task<ResultResponse> SetTerminalMaintenanceAsync(SetTerminalMaintenanceRequest request)
+        => _maintenance.SetTerminalMaintenanceAsync(request);
+
+    public Task<ResultResponse> ReserveTerminalAsync(ReserveTerminalRequest request)
+        => _maintenance.ReserveTerminalAsync(request);
+
+    public Task<ResultResponse> ReleaseReservationAsync(Guid terminalId, string cashierName)
+        => _maintenance.ReleaseReservationAsync(terminalId, cashierName);
+
+    // Chat
+    public Task<IReadOnlyList<ChatHistoryItemDto>> GetChatHistoryAsync(Guid terminalId, Guid? sessionId)
+        => _chatHistory.GetChatHistoryAsync(terminalId, sessionId);
+
+    // Database & Backup
+    public Task<ResultResponse> TriggerBackupAsync(string? targetDirectory, string cashierName)
+        => _backup.TriggerBackupAsync(targetDirectory, cashierName);
+
+    public Task<string> GetDatabaseInfoAsync()
+        => _backup.GetDatabaseInfoAsync();
+
     private async Task PushRackSnapshotAsync()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var states = await db.Terminals
+        var terminals = await db.Terminals
             .Include(t => t.Zone)
-            .Select(t => new TerminalStateDto(
-                t.Id,
-                t.Name,
-                t.Zone.Name,
-                (TerminalStatusDto)t.Status,
-                t.IsLocked,
-                t.AgentVersion,
-                t.LastSeenAt,
-                null,
-                0m,
-                0,
-                null,
-                null,
-                false))
+            .OrderBy(t => t.Zone.DisplayOrder)
+            .ThenBy(t => t.Name)
             .ToListAsync();
 
-        foreach (var state in states)
-        {
-            await Clients.Caller.TerminalStateChanged(state);
-        }
-    }
+        var actives = await db.Sessions
+            .Where(s => s.Status == SessionStatus.Active || s.Status == SessionStatus.Paused)
+            .Include(s => s.Lines)
+            .Include(s => s.Tariff).ThenInclude(t => t!.Rules)
+            .ToDictionaryAsync(s => s.TerminalId);
 
-    public override async Task OnConnectedAsync()
-    {
-        await base.OnConnectedAsync();
+        var now = DateTime.UtcNow;
+        var venueTz = TimeZoneInfo.Local;
+
+        foreach (var terminal in terminals)
+        {
+            actives.TryGetValue(terminal.Id, out var active);
+            var elapsed = active is null
+                ? 0
+                : (int)((now - active.StartedAt - TimeSpan.FromMinutes(active.PausedMinutes)).TotalMinutes);
+            if (elapsed < 0) elapsed = 0;
+
+            decimal amount = 0;
+            int? remaining = null;
+            if (active?.Tariff is not null)
+            {
+                amount = TariffEngine.ComputeTimeCharge(active.Tariff, active.StartedAt, now, venueTz, active.PausedMinutes, out _);
+                amount += active.Lines.Sum(l => l.Amount);
+                if (active.PlannedEndAt is { } end)
+                {
+                    remaining = (int)Math.Max(0, (end - now).TotalMinutes);
+                }
+            }
+
+            var dto = new TerminalStateDto(
+                terminal.Id,
+                terminal.Name,
+                terminal.Zone.Name,
+                (TerminalStatusDto)terminal.Status,
+                terminal.IsLocked,
+                terminal.AgentVersion,
+                terminal.LastSeenAt,
+                active?.Id,
+                amount,
+                elapsed,
+                remaining,
+                active?.PlannedEndAt,
+                active is { Status: SessionStatus.Paused },
+                terminal.MaintenanceReason,
+                terminal.ReservedFor,
+                terminal.CpuTemp,
+                terminal.GpuTemp,
+                terminal.RamPercent);
+
+            await Clients.Caller.TerminalStateChanged(dto);
+        }
     }
 }

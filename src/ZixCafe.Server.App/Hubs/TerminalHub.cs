@@ -1,10 +1,13 @@
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using ZixCafe.Domain.Entities;
+using ZixCafe.Domain.Enums;
+using ZixCafe.Domain.Services;
 using ZixCafe.Infrastructure;
 using ZixCafe.Server.App.Services;
 using ZixCafe.Shared.Contracts;
 using ZixCafe.Shared.Hubs;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ZixCafe.Server.App.Hubs;
 
@@ -13,15 +16,27 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
     private readonly TerminalRegistry _registry;
     private readonly IDbContextFactory<ZixCafeDbContext> _dbFactory;
     private readonly IHubContext<DashboardHub, IDashboardClient> _dashboards;
+    private readonly ChatHistoryService _chatHistory;
+    private readonly AlertsCenterService _alerts;
+    private readonly PeripheralMeteringService _peripherals;
+    private readonly RemoteOpsService _remoteOps;
 
     public TerminalHub(
         TerminalRegistry registry,
         IDbContextFactory<ZixCafeDbContext> dbFactory,
-        IHubContext<DashboardHub, IDashboardClient> dashboards)
+        IHubContext<DashboardHub, IDashboardClient> dashboards,
+        ChatHistoryService chatHistory,
+        AlertsCenterService alerts,
+        PeripheralMeteringService peripherals,
+        RemoteOpsService remoteOps)
     {
         _registry = registry;
         _dbFactory = dbFactory;
         _dashboards = dashboards;
+        _chatHistory = chatHistory;
+        _alerts = alerts;
+        _peripherals = peripherals;
+        _remoteOps = remoteOps;
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
@@ -54,7 +69,10 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         terminal.AgentVersion = request.AgentVersion;
         terminal.IpAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
         terminal.LastSeenAt = DateTime.UtcNow;
-        terminal.Status = Domain.Enums.TerminalStatus.Available;
+        if (terminal.Status == TerminalStatus.Offline)
+        {
+            terminal.Status = TerminalStatus.Available;
+        }
         terminal.IsLocked = true;
         await db.SaveChangesAsync();
 
@@ -72,8 +90,9 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
 
         _registry.RaiseState(new TerminalStateDto(
             terminal.Id, terminal.Name, terminal.Zone.Name,
-            TerminalStatusDto.Available, true, request.AgentVersion,
-            DateTime.UtcNow, null, 0, 0, null, null));
+            (TerminalStatusDto)terminal.Status, true, request.AgentVersion,
+            DateTime.UtcNow, null, 0, 0, null, null, false,
+            terminal.MaintenanceReason, terminal.ReservedFor, terminal.CpuTemp, terminal.GpuTemp, terminal.RamPercent));
 
         return new RegisterResult(terminal.Id, terminal.Name, terminal.Zone.Name, issuedSecret);
     }
@@ -85,8 +104,33 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         {
             throw new HubException("Not registered.");
         }
+
         _registry.Touch(terminalId, Context.ConnectionId, agentVersion, cpuPercent, ramPercent, diskFreeGb);
-        await Task.CompletedTask;
+
+        // Update in database
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var terminal = await db.Terminals.FirstOrDefaultAsync(t => t.Id == terminalId);
+        if (terminal is not null)
+        {
+            terminal.LastSeenAt = DateTime.UtcNow;
+            terminal.CpuTemp = cpuPercent;
+            terminal.RamPercent = ramPercent;
+            terminal.DiskFreeGb = diskFreeGb;
+            terminal.AgentVersion = agentVersion;
+            await db.SaveChangesAsync();
+
+            // Check hardware thresholds
+            if (cpuPercent >= 90)
+            {
+                await _alerts.RaiseAlertAsync("warn", "hardware.cpu_high",
+                    $"{terminal.Name}: High CPU utilization ({cpuPercent}%).", terminalId, null);
+            }
+            if (diskFreeGb <= 5 && diskFreeGb >= 0)
+            {
+                await _alerts.RaiseAlertAsync("warn", "hardware.disk_low",
+                    $"{terminal.Name}: Low disk space remaining ({diskFreeGb} GB).", terminalId, null);
+            }
+        }
     }
 
     public async Task SessionCountdownTickAsync(Guid sessionId, int minutesElapsed, decimal currentAmount)
@@ -109,12 +153,80 @@ public class TerminalHub : Hub<ITerminalClient>, ITerminalServer
         {
             return;
         }
+
         var name = _registry.Get(terminalId)?.Name ?? $"Terminal {terminalId.ToString()[..8]}";
-        await _dashboards.Clients.Group("dashboard").ChatMessage(terminalId, name, message.Trim(), DateTime.UtcNow);
+        var sentAt = DateTime.UtcNow;
+
+        await _chatHistory.SaveChatAsync(terminalId, null, name, message, true);
+        await _dashboards.Clients.Group("dashboard").ChatMessage(terminalId, name, message.Trim(), sentAt);
+    }
+
+    public async Task SubmitScreenFrameAsync(Guid requestId, byte[] jpegBytes)
+    {
+        var terminalId = Context.Items.TryGetValue("terminalId", out var v) ? (Guid)v! : Guid.Empty;
+        if (terminalId != Guid.Empty && jpegBytes.Length > 0)
+        {
+            await _remoteOps.RelayScreenFrameAsync(terminalId, jpegBytes);
+        }
+    }
+
+    public async Task ReportProhibitedAppKilledAsync(string processName)
+    {
+        var terminalId = Context.Items.TryGetValue("terminalId", out var v) ? (Guid)v! : Guid.Empty;
+        var name = _registry.Get(terminalId)?.Name ?? $"Terminal {terminalId.ToString()[..8]}";
+        await _alerts.RaiseAlertAsync("alert", "security.prohibited_app",
+            $"{name}: Terminated prohibited application '{processName}'.", terminalId, null);
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
+        var prevHash = last?.Hash ?? string.Empty;
+        var now = DateTime.UtcNow;
+        var (_, hash) = AuditChain.Link(prevHash, "security.app_kill", "Terminal", terminalId.ToString(), $"process={processName}", "system", now);
+
+        db.AuditEntries.Add(new AuditEntry
+        {
+            Action = "security.app_kill",
+            TargetType = "Terminal",
+            TargetId = terminalId.ToString(),
+            DetailJson = $"process={processName}",
+            CashierName = "system",
+            PrevHash = prevHash,
+            Hash = hash,
+            CreatedAt = now
+        });
+        await db.SaveChangesAsync();
+    }
+
+    public async Task ReportUsbUsageAsync(long bytesTransferred)
+    {
+        var terminalId = Context.Items.TryGetValue("terminalId", out var v) ? (Guid)v! : Guid.Empty;
+        if (terminalId != Guid.Empty)
+        {
+            await _peripherals.RecordUsbTransferAsync(terminalId, bytesTransferred);
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        var terminalId = Context.Items.TryGetValue("terminalId", out var v) ? (Guid)v! : Guid.Empty;
+        if (terminalId != Guid.Empty)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var terminal = await db.Terminals.Include(t => t.Zone).FirstOrDefaultAsync(t => t.Id == terminalId);
+            if (terminal is not null)
+            {
+                terminal.Status = TerminalStatus.Offline;
+                terminal.LastSeenAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+
+                _registry.RaiseState(new TerminalStateDto(
+                    terminal.Id, terminal.Name, terminal.Zone.Name,
+                    TerminalStatusDto.Offline, true, terminal.AgentVersion,
+                    terminal.LastSeenAt, null, 0, 0, null, null, false,
+                    terminal.MaintenanceReason, terminal.ReservedFor, terminal.CpuTemp, terminal.GpuTemp, terminal.RamPercent));
+            }
+        }
+
         _registry.DropConnection(Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }

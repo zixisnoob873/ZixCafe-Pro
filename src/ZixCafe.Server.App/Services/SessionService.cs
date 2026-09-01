@@ -319,7 +319,12 @@ public class SessionService
             elapsed,
             remaining,
             active?.PlannedEndAt,
-            active is { Status: SessionStatus.Paused }));
+            active is { Status: SessionStatus.Paused },
+            terminal.MaintenanceReason,
+            terminal.ReservedFor,
+            terminal.CpuTemp,
+            terminal.GpuTemp,
+            terminal.RamPercent));
     }
 
     public async Task<ResultResponse> PauseAsync(Guid terminalId, string cashierName)

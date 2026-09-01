@@ -1,13 +1,14 @@
-﻿<Window x:Class="ZixCafe.Server.App.MainWindow"
+<Window x:Class="ZixCafe.Server.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:rack="clr-namespace:ZixCafe.Server.App.Rack"
-        Title="ZixCafe Pro — Server"
-        Width="1280" Height="800" MinWidth="1024" MinHeight="640"
+        Title="ZixCafe Pro — Server Management Studio"
+        Width="1400" Height="860" MinWidth="1100" MinHeight="700"
         Background="{StaticResource VoidBrush}"
         FontFamily="{StaticResource BodyFont}"
         TextOptions.TextFormattingMode="Display"
-        UseLayoutRounding="True">
+        UseLayoutRounding="True"
+        KeyDown="Window_KeyDown">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{StaticResource NavWidth}" />
@@ -15,304 +16,854 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
+        <!-- Navigation Sidebar -->
         <Border Grid.Column="0" Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="16,20,16,8" Orientation="Horizontal">
+                <!-- Branding Header -->
+                <StackPanel Grid.Row="0" Margin="16,20,16,12" Orientation="Horizontal">
                     <Path Width="26" Height="26" Fill="{StaticResource GoldBrush}"
                           Data="{StaticResource ZixBoltGeometry}" Stretch="Uniform" />
-                    <TextBlock Margin="10,0,0,0" Text="ZIXCAFE PRO" VerticalAlignment="Center"
-                               Style="{StaticResource DisplayHeading}" FontSize="15"
-                               Foreground="{StaticResource InkBrush}" />
+                    <StackPanel Margin="10,0,0,0">
+                        <TextBlock Text="ZIXCAFE PRO" Style="{StaticResource DisplayHeading}" FontSize="15" Foreground="{StaticResource InkBrush}" />
+                        <TextBlock x:Name="LicenseRibbonText" Text="COMMERCIAL EDITION" Style="{StaticResource MonoData}" FontSize="9" Foreground="{StaticResource GoldBrush}" />
+                    </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Row="1">
-                    <RadioButton x:Name="NavRack" GroupName="nav" IsChecked="True" Content="Rack"
-                                 Style="{StaticResource NavButton}" Checked="NavRack_Checked" />
-                    <RadioButton x:Name="NavDesk" GroupName="nav" Content="Desk"
-                                 Style="{StaticResource NavButton}" Checked="NavDesk_Checked" />
-                </StackPanel>
+                <!-- Navigation Tabs -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,4,0,0">
+                        <RadioButton x:Name="NavRack" GroupName="nav" IsChecked="True" Content="Rack (F1)"
+                                     Style="{StaticResource NavButton}" Checked="NavRack_Checked" />
+                        <RadioButton x:Name="NavDesk" GroupName="nav" Content="Desk &amp; Shifts"
+                                     Style="{StaticResource NavButton}" Checked="NavDesk_Checked" />
+                        <RadioButton x:Name="NavSales" GroupName="nav" Content="POS &amp; Sales (F5)"
+                                     Style="{StaticResource NavButton}" Checked="NavSales_Checked" />
+                        <RadioButton x:Name="NavTickets" GroupName="nav" Content="Vouchers / Tickets"
+                                     Style="{StaticResource NavButton}" Checked="NavTickets_Checked" />
+                        <RadioButton x:Name="NavMembers" GroupName="nav" Content="Members Club"
+                                     Style="{StaticResource NavButton}" Checked="NavMembers_Checked" />
+                        <RadioButton x:Name="NavInventory" GroupName="nav" Content="Inventory &amp; Stock"
+                                     Style="{StaticResource NavButton}" Checked="NavInventory_Checked" />
+                        <RadioButton x:Name="NavPeripherals" GroupName="nav" Content="Print &amp; USB Services"
+                                     Style="{StaticResource NavButton}" Checked="NavPeripherals_Checked" />
+                        <RadioButton x:Name="NavReports" GroupName="nav" Content="Reports &amp; Audit"
+                                     Style="{StaticResource NavButton}" Checked="NavReports_Checked" />
+                        <RadioButton x:Name="NavAlerts" GroupName="nav" Content="Alerts Center"
+                                     Style="{StaticResource NavButton}" Checked="NavAlerts_Checked" />
+                        <RadioButton x:Name="NavSettings" GroupName="nav" Content="Settings &amp; Tariffs"
+                                     Style="{StaticResource NavButton}" Checked="NavSettings_Checked" />
+                    </StackPanel>
+                </ScrollViewer>
 
-                <StackPanel Grid.Row="3" Margin="16,0,16,16">
-                    <TextBlock x:Name="CashierText" Text="—" Style="{StaticResource CapsLabel}" FontSize="10"
+                <!-- Footer Status -->
+                <StackPanel Grid.Row="2" Margin="16,0,16,16">
+                    <Separator Background="{StaticResource LineBrush}" Margin="0,0,0,12" />
+                    <TextBlock x:Name="CashierText" Text="CASHIER: —" Style="{StaticResource CapsLabel}" FontSize="10"
                                Foreground="{StaticResource InkBrush}" />
-                    <TextBlock Text="SERVER  ·  PORT 40000" Style="{StaticResource CapsLabel}" FontSize="10"
-                               Margin="0,4,0,0" />
-                    <TextBlock x:Name="HealthText" Text="STARTING" Style="{StaticResource MonoData}"
-                               Margin="0,4,0,0" FontSize="12"
-                               Foreground="{StaticResource GoldBrush}" />
+                    <TextBlock x:Name="HealthText" Text="SERVER · PORT 40000 · ONLINE" Style="{StaticResource MonoData}"
+                               Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource GoldBrush}" />
                 </StackPanel>
             </Grid>
         </Border>
 
-        <Grid x:Name="RackView" Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+        <!-- Main Workspace Area -->
+        <Grid Grid.Column="1">
 
-            <Border Grid.Row="0" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
-                    Background="{StaticResource VoidBrush}">
-                <Grid Margin="24,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Rack" Style="{StaticResource DisplayHeading}" VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Content="Pair Terminal" Style="{StaticResource GhostButton}"
-                            Margin="0,0,8,0" Click="PairTerminal_Click" />
-                    <Button Grid.Column="2" Content="Lock All" Style="{StaticResource GhostButton}"
-                            Click="LockAll_Click" />
-                </Grid>
-            </Border>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="RackItems" Margin="24,20">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <rack:TerminalTile DataContext="{Binding}" MouseLeftButtonUp="Tile_Click" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Grid>
+            <!-- 1. RACK VIEW -->
+            <Grid x:Name="RackView">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-        <Grid x:Name="DeskView" Grid.Column="1" Visibility="Collapsed">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="24,20">
-
-                    <TextBlock Text="Shift" Style="{StaticResource DisplayHeading}" />
-                    <TextBlock x:Name="ShiftStatusText" Margin="0,6,0,0" Style="{StaticResource MonoData}"
-                               FontSize="12" Text="NO SHIFT OPEN" />
-                    <Grid Margin="0,12,0,0">
+                <Border Grid.Row="0" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                        Background="{StaticResource VoidBrush}">
+                    <Grid Margin="24,14">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="OpenShiftButton" Content="Open Shift…" Style="{StaticResource GoldButton}"
-                                Click="OpenShift_Click" />
-                        <Button x:Name="CloseShiftButton" Grid.Column="1" Content="Close Shift…" Margin="8,0,0,0"
-                                Style="{StaticResource GhostButton}" Click="CloseShift_Click" IsEnabled="False" />
-                    </Grid>
+                        <TextBlock Text="Terminal Rack" Style="{StaticResource DisplayHeading}" VerticalAlignment="Center" />
 
-                    <TextBlock Text="WAITLIST" Style="{StaticResource CapsLabel}" Margin="0,28,0,8" />
-                    <ItemsControl x:Name="WaitlistItems">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="24,0,0,0" VerticalAlignment="Center">
+                            <TextBox x:Name="RackSearchBox" Width="180" Style="{StaticResource AppTextBox}"
+                                     FontSize="12" TextChanged="RackSearch_TextChanged" Margin="0,0,12,0" />
+                            <ComboBox x:Name="RackZoneFilter" Width="140" FontSize="12" SelectionChanged="RackZoneFilter_SelectionChanged" />
+                        </StackPanel>
+
+                        <Button Grid.Column="2" Content="Pair Terminal" Style="{StaticResource GhostButton}"
+                                Margin="0,0,8,0" Click="PairTerminal_Click" />
+                        <Button Grid.Column="3" Content="Lock All (Idle)" Style="{StaticResource GhostButton}"
+                                Margin="0,0,8,0" Click="LockAll_Click" />
+                        <Button Grid.Column="4" Content="Web Dashboard" Style="{StaticResource GhostButton}"
+                                Click="OpenWebDashboard_Click" />
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="RackItems" Margin="24,20">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource RaisedBrush}" Padding="12,8" Margin="0,0,0,6"
-                                        CornerRadius="2">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold"
-                                                       Text="{Binding GuestName}" />
-                                            <TextBlock Style="{StaticResource MonoData}" FontSize="11"
-                                                       Foreground="{StaticResource GhostBrush}">
-                                                <Run Text="{Binding PartySize, Mode=OneWay}" /><Run Text=" p · since " /><Run Text="{Binding EnqueuedAt.Hour, Mode=OneWay}" /><Run Text=":" /><Run Text="{Binding EnqueuedAt.Minute, Mode=OneWay}" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Content="Seat…" Style="{StaticResource GhostButton}"
-                                                Margin="8,0,0,0" Click="SeatGuest_Click" />
-                                        <Button Grid.Column="2" Content="Skip" Style="{StaticResource GhostButton}"
-                                                Margin="8,0,0,0" Click="SkipGuest_Click" />
-                                    </Grid>
-                                </Border>
+                                <rack:TerminalTile DataContext="{Binding}" MouseLeftButtonUp="Tile_Click" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <Grid Margin="0,4,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="WaitNameInput" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="12" />
-                        <TextBox x:Name="WaitPartyInput" Grid.Column="2" Width="44" Text="1" MaxLength="2" FontSize="12" />
-                        <TextBox x:Name="WaitContactInput" Grid.Column="4" Style="{StaticResource AppTextBox}"
-                                 MaxLength="120" FontSize="12" />
-                        <Button x:Name="AddWaitGuestButton" Grid.Column="6" Content="Add" Style="{StaticResource GhostButton}"
-                                Margin="6,0,0,0" Click="AddWaitGuest_Click" />
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 2. DESK & SHIFTS VIEW -->
+            <Grid x:Name="DeskView" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="32,24">
+                        <TextBlock Text="Desk &amp; Shift Management" Style="{StaticResource DisplayHeading}" />
+                        <TextBlock x:Name="ShiftStatusText" Margin="0,6,0,0" Style="{StaticResource MonoData}"
+                                   FontSize="12" Text="NO SHIFT OPEN" />
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="OpenShiftButton" Content="Open Shift…" Style="{StaticResource GoldButton}" Click="OpenShift_Click" />
+                            <Button x:Name="CloseShiftButton" Grid.Column="1" Content="Close Shift (Z-Report)…" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="CloseShift_Click" IsEnabled="False" />
+                            <Button x:Name="PrintXReportButton" Grid.Column="2" Content="Print X-Report" Margin="10,0,0,0" Style="{StaticResource GhostButton}" Click="PrintXReport_Click" IsEnabled="False" />
+                        </Grid>
+
+                        <TextBlock Text="WAITING GUESTS" Style="{StaticResource CapsLabel}" Margin="0,32,0,8" />
+                        <ItemsControl x:Name="WaitlistItems">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource RaisedBrush}" Padding="12,8" Margin="0,0,0,6" CornerRadius="2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Text="{Binding GuestName}" />
+                                                <TextBlock Style="{StaticResource MonoData}" FontSize="11" Foreground="{StaticResource GhostBrush}">
+                                                    <Run Text="{Binding PartySize, Mode=OneWay}" /><Run Text=" guest(s) · since " /><Run Text="{Binding EnqueuedAt.Hour, Mode=OneWay}" /><Run Text=":" /><Run Text="{Binding EnqueuedAt.Minute, Mode=OneWay}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Seat…" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SeatGuest_Click" />
+                                            <Button Grid.Column="2" Content="Skip" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SkipGuest_Click" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="WaitNameInput" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="12" />
+                            <TextBox x:Name="WaitPartyInput" Grid.Column="2" Width="44" Text="1" MaxLength="2" FontSize="12" />
+                            <TextBox x:Name="WaitContactInput" Grid.Column="4" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="12" />
+                            <Button x:Name="AddWaitGuestButton" Grid.Column="6" Content="Add Guest" Style="{StaticResource GhostButton}" Click="AddWaitGuest_Click" />
+                        </Grid>
+
+                        <TextBlock Text="HARDWARE &amp; ACCESSORY LOANS" Style="{StaticResource CapsLabel}" Margin="0,32,0,8" />
+                        <ItemsControl x:Name="LoanItems">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource RaisedBrush}" Padding="12,8" Margin="0,0,0,6" CornerRadius="2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Text="{Binding ItemName}" />
+                                                <TextBlock Style="{StaticResource MonoData}" FontSize="11" Foreground="{StaticResource GhostBrush}">
+                                                    <Run Text="Deposit: " /><Run Text="{Binding DepositAmount, Mode=OneWay}" /><Run Text=" · Held by: " /><Run Text="{Binding HeldBy, Mode=OneWay}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Returned" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="ReturnLoan_Click" />
+                                            <Button Grid.Column="2" Content="Forfeit Deposit" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="ForfeitLoan_Click" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="LoanItemInput" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="12" />
+                            <TextBox x:Name="LoanDepositInput" Grid.Column="2" Width="64" Text="0" MaxLength="8" FontSize="12" />
+                            <TextBox x:Name="LoanHeldInput" Grid.Column="4" Width="110" MaxLength="120" FontSize="12" />
+                            <Button x:Name="LoanItemButton" Grid.Column="6" Content="Loan Item" Style="{StaticResource GhostButton}" Click="LoanItem_Click" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 3. POS & SALES VIEW -->
+            <Grid x:Name="SalesView" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Product Catalog Selection -->
+                <Border Grid.Column="0" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0" Padding="24,20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Retail POS Catalog" Style="{StaticResource DisplayHeading}" />
+                        <Grid Grid.Row="1" Margin="0,12,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="140" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="PosSearchBox" Style="{StaticResource AppTextBox}" FontSize="12" TextChanged="PosSearch_TextChanged" />
+                            <ComboBox x:Name="PosCategoryFilter" Grid.Column="1" Margin="8,0,0,0" SelectionChanged="PosCategory_SelectionChanged" />
+                        </Grid>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="PosProductGrid">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}"
+                                                BorderThickness="1" Width="170" Height="100" Margin="0,0,10,10" Padding="10"
+                                                CornerRadius="3" Cursor="Hand" MouseLeftButtonUp="PosProductTile_Click">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Style="{StaticResource BodyText}" FontSize="12" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Category}" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <Grid Grid.Row="1">
+                                                    <TextBlock Text="{Binding Price, StringFormat={}{0:C}}" Style="{StaticResource MonoData}" Foreground="{StaticResource GoldBrush}" FontSize="13" />
+                                                    <TextBlock Text="{Binding StockQty, StringFormat={}Stock: {0}}" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </Grid>
+                </Border>
 
-                    <TextBlock Text="LOANS OUT" Style="{StaticResource CapsLabel}" Margin="0,28,0,8" />
-                    <ItemsControl x:Name="LoanItems">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource RaisedBrush}" Padding="12,8" Margin="0,0,0,6"
-                                        CornerRadius="2">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold"
-                                                       Text="{Binding ItemName}" />
-                                            <TextBlock Style="{StaticResource MonoData}" FontSize="11"
-                                                       Foreground="{StaticResource GhostBrush}">
-                                                <Run Text="deposit " /><Run Text="{Binding DepositAmount, Mode=OneWay}" /><Run Text=" · held by " /><Run Text="{Binding HeldBy, Mode=OneWay}" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Content="Returned" Style="{StaticResource GhostButton}"
-                                                Margin="8,0,0,0" Click="ReturnLoan_Click" />
-                                        <Button Grid.Column="2" Content="Forfeit" Style="{StaticResource GhostButton}"
-                                                Margin="8,0,0,0" Click="ForfeitLoan_Click" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Grid Margin="0,4,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="6" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="LoanItemInput" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="12" />
-                        <TextBox x:Name="LoanDepositInput" Grid.Column="2" Width="64" Text="0" MaxLength="8" FontSize="12" />
-                        <TextBox x:Name="LoanHeldInput" Grid.Column="4" Width="110" MaxLength="120" FontSize="12" />
-                        <Button x:Name="LoanItemButton" Grid.Column="6" Content="Loan Out" Style="{StaticResource GhostButton}"
-                                Margin="6,0,0,0" Click="LoanItem_Click" />
+                <!-- Cart & Checkout Panel -->
+                <Border Grid.Column="1" Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="Order Summary" Style="{StaticResource DisplayHeading}" FontSize="15" />
+                            <Button Content="Clear Cart" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Click="PosClearCart_Click" />
+                        </Grid>
+
+                        <DataGrid x:Name="PosCartGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                                  BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                                  AlternatingRowBackground="{StaticResource RaisedBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Item" Binding="{Binding Name}" Width="*" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="45" />
+                                <DataGridTextColumn Header="Price" Binding="{Binding UnitPrice, StringFormat={}{0:C}}" Width="65" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Total" Binding="{Binding LineTotal, StringFormat={}{0:C}}" Width="70" IsReadOnly="True" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="2" Margin="0,14,0,14">
+                            <Grid Margin="0,2">
+                                <TextBlock Text="Subtotal:" Style="{StaticResource BodyText}" FontSize="12" />
+                                <TextBlock x:Name="PosSubtotalText" Text="$0.00" Style="{StaticResource MonoData}" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Grid Margin="0,2">
+                                <TextBlock Text="Discount ($):" Style="{StaticResource BodyText}" FontSize="12" VerticalAlignment="Center" />
+                                <TextBox x:Name="PosDiscountInput" Width="70" Text="0.00" Style="{StaticResource AppTextBox}" HorizontalAlignment="Right" TextChanged="PosDiscount_TextChanged" />
+                            </Grid>
+                            <Separator Background="{StaticResource LineBrush}" Margin="0,6" />
+                            <Grid Margin="0,2">
+                                <TextBlock Text="Total Due:" Style="{StaticResource DisplayHeading}" FontSize="16" />
+                                <TextBlock x:Name="PosTotalText" Text="$0.00" Style="{StaticResource DisplayHeading}" FontSize="18" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Right" />
+                            </Grid>
+
+                            <TextBlock Text="PAYMENT TENDER" Style="{StaticResource CapsLabel}" Margin="0,10,0,4" />
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="CASH" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                    <TextBox x:Name="PosPaidCash" Text="0.00" Style="{StaticResource AppTextBox}" TextChanged="PosTender_TextChanged" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="CARD" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                    <TextBox x:Name="PosPaidCard" Text="0.00" Style="{StaticResource AppTextBox}" TextChanged="PosTender_TextChanged" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="QR" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                    <TextBox x:Name="PosPaidQr" Text="0.00" Style="{StaticResource AppTextBox}" TextChanged="PosTender_TextChanged" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,6,0,0">
+                                <TextBlock Text="Change Due:" Style="{StaticResource BodyText}" FontWeight="SemiBold" />
+                                <TextBlock x:Name="PosChangeText" Text="$0.00" Style="{StaticResource MonoData}" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Button Grid.Row="3" Content="Complete POS Sale &amp; Print Receipt" Style="{StaticResource GoldButton}"
+                                Height="38" Click="PosCompleteSale_Click" />
                     </Grid>
+                </Border>
+            </Grid>
 
-                </StackPanel>
-            </ScrollViewer>
-        </Grid>
-
-        <Border x:Name="InspectorPanel" Grid.Column="2" Width="280" Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource LineBrush}" BorderThickness="1,0,0,0" Visibility="Collapsed">
-            <Grid Margin="20">
+            <!-- 4. VOUCHERS / TICKETS VIEW -->
+            <Grid x:Name="TicketsView" Visibility="Collapsed" Margin="32,24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock x:Name="InspectorName" Text="—" Style="{StaticResource DisplayHeading}" FontSize="18" />
-                <StackPanel Grid.Row="1" Margin="0,2,0,0">
-                    <TextBlock x:Name="InspectorZone" Text="—" Style="{StaticResource CapsLabel}" />
-                    <TextBlock x:Name="InspectorStatus" Margin="0,8,0,0" Style="{StaticResource BodyText}" />
-                    <TextBlock x:Name="InspectorSession" Margin="0,4,0,0" Style="{StaticResource BodyText}"
-                               FontSize="12" Foreground="{StaticResource GhostBrush}" TextWrapping="Wrap" />
-                </StackPanel>
+                <Grid Grid.Row="0">
+                    <TextBlock Text="Vouchers &amp; Ticket Codes" Style="{StaticResource DisplayHeading}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Sell Single Voucher…" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="SellTicket_Click" />
+                        <Button Content="Batch Generate…" Style="{StaticResource GhostButton}" Click="BatchGenerateTickets_Click" />
+                    </StackPanel>
+                </Grid>
 
-                <StackPanel Grid.Row="2">
-                    <TextBlock Text="CHAT" Style="{StaticResource CapsLabel}" Margin="0,0,0,8" />
-                    <ItemsControl x:Name="ChatItems" MaxHeight="150"
-                                  VerticalAlignment="Top" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Margin="0,2" TextWrapping="Wrap"
-                                           Style="{StaticResource BodyText}" FontSize="12">
-                                    <Run Text="{Binding From, Mode=OneWay}" FontWeight="SemiBold"
-                                         Foreground="{StaticResource GoldBrush}" />
-                                    <Run Text="{Binding Message, Mode=OneWay}"
-                                         Foreground="{StaticResource InkBrush}" />
-                                </TextBlock>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="ChatInput" MaxLength="300" FontSize="12" />
-                        <Button x:Name="ChatSendButton" Grid.Column="1" Content="Send"
-                                Style="{StaticResource GhostButton}" Margin="8,0,0,0"
-                                Click="ChatSend_Click" />
-                    </Grid>
-                </StackPanel>
+                <Grid Grid.Row="1" Margin="0,16,0,12">
+                    <CheckBox x:Name="TicketsUnusedOnlyCheck" Content="Show unused vouchers only" IsChecked="True"
+                              Foreground="{StaticResource GhostBrush}" Checked="TicketsFilter_Changed" Unchecked="TicketsFilter_Changed" />
+                    <Button Content="Void Selected (Manager PIN)…" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Click="VoidTicket_Click" />
+                </Grid>
 
-                <StackPanel Grid.Row="3">
-                    <TextBlock Text="START SESSION" Style="{StaticResource CapsLabel}" Margin="0,0,0,8" />
-                    <Button Content="Walk-up (postpaid)" Style="{StaticResource GoldButton}"
-                            HorizontalAlignment="Stretch" Click="StartPostpaid_Click" />
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Content="30 min" Style="{StaticResource GhostButton}" Click="StartPrepaid30_Click" />
-                        <Button Grid.Column="2" Content="60 min" Style="{StaticResource GhostButton}" Click="StartPrepaid60_Click" />
-                    </Grid>
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Content="120 min" Style="{StaticResource GhostButton}" Click="StartPrepaid120_Click" />
-                        <Button x:Name="RedeemCodeButton" Grid.Column="2" Content="Redeem code…"
-                                Style="{StaticResource GhostButton}" Click="RedeemCode_Click" />
-                    </Grid>
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="MemberQueryInput" MaxLength="40" FontSize="12"
-                                 VerticalContentAlignment="Center" />
-                        <Button Grid.Column="1" Content="Member…" Style="{StaticResource GhostButton}"
-                                Margin="8,0,0,0" Click="MemberStart_Click" />
-                    </Grid>
-
-                    <TextBlock Text="CONTROL" Style="{StaticResource CapsLabel}" Margin="0,24,0,8" />
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="PauseResumeButton" Content="Pause" Style="{StaticResource GhostButton}"
-                                Click="PauseResume_Click" />
-                        <Button x:Name="EndSessionButton" Grid.Column="2" Content="End Session" Style="{StaticResource GoldButton}"
-                                Click="EndSession_Click" />
-                    </Grid>
-                    <Button Content="Lock Terminal" Style="{StaticResource GhostButton}"
-                            HorizontalAlignment="Stretch" Margin="0,8,0,0" Click="LockTerminal_Click" />
-
-                    <TextBlock Text="SELL ITEM" Style="{StaticResource CapsLabel}" Margin="0,24,0,8" />
-                    <ComboBox x:Name="ProductPicker" FontSize="12"
-                              DisplayMemberPath="Name" SelectedValuePath="Id" />
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Button Content="Add to session" Style="{StaticResource GhostButton}"
-                                HorizontalAlignment="Stretch" Click="AddProduct_Click" />
-                    </Grid>
-                </StackPanel>
+                <DataGrid x:Name="TicketsGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="150" />
+                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="90" />
+                        <DataGridTextColumn Header="Minutes" Binding="{Binding DurationMinutes}" Width="75" />
+                        <DataGridTextColumn Header="Credit" Binding="{Binding CreditAmount, StringFormat={}{0:C}}" Width="80" />
+                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat={}{0:C}}" Width="80" />
+                        <DataGridCheckBoxColumn Header="Used" Binding="{Binding IsUsed}" Width="60" />
+                        <DataGridTextColumn Header="Used At" Binding="{Binding UsedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="130" />
+                        <DataGridTextColumn Header="Batch" Binding="{Binding BatchRef}" Width="110" />
+                        <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
             </Grid>
+
+            <!-- 5. MEMBERS CLUB VIEW -->
+            <Grid x:Name="MembersView" Visibility="Collapsed" Margin="32,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="Members Club Management" Style="{StaticResource DisplayHeading}" />
+                    <Button Content="New Member…" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Click="AddMember_Click" />
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,16,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="240" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="MemberSearchBox" Style="{StaticResource AppTextBox}" TextChanged="MemberSearch_TextChanged" />
+                    <Button Grid.Column="2" Content="Top-up Money / Time…" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="MemberTopUp_Click" />
+                    <Button Grid.Column="3" Content="Toggle Freeze" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="MemberFreeze_Click" />
+                </Grid>
+
+                <DataGrid x:Name="MembersGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Code / ID" Binding="{Binding Code}" Width="100" />
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" />
+                        <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="120" />
+                        <DataGridTextColumn Header="Tier" Binding="{Binding Tier}" Width="80" />
+                        <DataGridTextColumn Header="Cash Balance" Binding="{Binding Balance, StringFormat={}{0:C}}" Width="100" />
+                        <DataGridTextColumn Header="Time (Min)" Binding="{Binding TimeBalanceMinutes}" Width="90" />
+                        <DataGridTextColumn Header="Total Spent" Binding="{Binding TotalSpent, StringFormat={}{0:C}}" Width="100" />
+                        <DataGridCheckBoxColumn Header="Frozen" Binding="{Binding IsFrozen}" Width="70" />
+                        <DataGridTextColumn Header="Joined" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 6. INVENTORY & STOCK VIEW -->
+            <Grid x:Name="InventoryView" Visibility="Collapsed" Margin="32,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="Inventory &amp; Stock Control" Style="{StaticResource DisplayHeading}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="New Product…" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="AddProduct_Click" />
+                        <Button Content="Stock Adjustment (Restock / Waste)…" Style="{StaticResource GhostButton}" Click="StockAdjust_Click" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,16,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="InvSearchBox" Style="{StaticResource AppTextBox}" TextChanged="InvSearch_TextChanged" />
+                    <ComboBox x:Name="InvCategoryFilter" Grid.Column="1" Margin="8,0,0,0" SelectionChanged="InvCategory_SelectionChanged" />
+                </Grid>
+
+                <DataGrid x:Name="InventoryGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Item Name" Binding="{Binding Name}" Width="200" />
+                        <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120" />
+                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat={}{0:C}}" Width="90" />
+                        <DataGridTextColumn Header="Cost" Binding="{Binding Cost, StringFormat={}{0:C}}" Width="90" />
+                        <DataGridTextColumn Header="Stock Qty" Binding="{Binding StockQty}" Width="90" />
+                        <DataGridTextColumn Header="Low Threshold" Binding="{Binding LowStockThreshold}" Width="110" />
+                        <DataGridCheckBoxColumn Header="Low Stock" Binding="{Binding IsLowStock}" Width="90" />
+                        <DataGridTextColumn Header="Barcode / SKU" Binding="{Binding Barcode}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 7. PRINT & USB SERVICES VIEW -->
+            <Grid x:Name="PeripheralsView" Visibility="Collapsed" Margin="32,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="Print Billing Queue" Style="{StaticResource DisplayHeading}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Release Print Job…" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="ReleasePrint_Click" />
+                        <Button Content="Cancel Print Job" Style="{StaticResource GhostButton}" Click="CancelPrint_Click" />
+                    </StackPanel>
+                </Grid>
+
+                <DataGrid x:Name="PrintJobsGrid" Grid.Row="1" Margin="0,12,0,24" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Document" Binding="{Binding DocumentName}" Width="200" />
+                        <DataGridTextColumn Header="Terminal" Binding="{Binding TerminalName}" Width="110" />
+                        <DataGridTextColumn Header="Pages" Binding="{Binding Pages}" Width="70" />
+                        <DataGridTextColumn Header="Copies" Binding="{Binding Copies}" Width="70" />
+                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat={}{0:C}}" Width="90" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90" />
+                        <DataGridTextColumn Header="Queued At" Binding="{Binding QueuedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock Grid.Row="2" Text="USB Metered Data Transfers" Style="{StaticResource DisplayHeading}" />
+
+                <DataGrid x:Name="UsbChargesGrid" Grid.Row="3" Margin="0,12,0,0" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Terminal" Binding="{Binding TerminalName}" Width="130" />
+                        <DataGridTextColumn Header="Data In (GB)" Binding="{Binding GbIn, StringFormat={}{0:F2}}" Width="110" />
+                        <DataGridTextColumn Header="Data Out (GB)" Binding="{Binding GbOut, StringFormat={}{0:F2}}" Width="110" />
+                        <DataGridTextColumn Header="Rate / GB" Binding="{Binding RatePerGb, StringFormat={}{0:C}}" Width="100" />
+                        <DataGridTextColumn Header="Total Charge" Binding="{Binding Amount, StringFormat={}{0:C}}" Width="110" />
+                        <DataGridCheckBoxColumn Header="Billed" Binding="{Binding Billed}" Width="80" />
+                        <DataGridTextColumn Header="Recorded At" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 8. REPORTS & AUDIT VIEW -->
+            <Grid x:Name="ReportsView" Visibility="Collapsed" Margin="32,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="Operations Reports &amp; Cryptographic Audit" Style="{StaticResource DisplayHeading}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Verify Audit Chain (SHA-256)" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="VerifyAuditChain_Click" />
+                        <Button Content="Export Sessions CSV" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="ExportSessionsCsv_Click" />
+                        <Button Content="Export Revenue CSV" Style="{StaticResource GhostButton}" Click="ExportRevenueCsv_Click" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Margin="0,16,0,12" Orientation="Horizontal">
+                    <TextBlock Text="REPORT TYPE:" Style="{StaticResource CapsLabel}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox x:Name="ReportTypePicker" Width="160" SelectionChanged="ReportType_SelectionChanged" />
+                </StackPanel>
+
+                <!-- Session History Grid -->
+                <DataGrid x:Name="SessionHistoryGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Terminal" Binding="{Binding TerminalName}" Width="120" />
+                        <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" Width="90" />
+                        <DataGridTextColumn Header="Member" Binding="{Binding MemberName}" Width="120" />
+                        <DataGridTextColumn Header="Ticket" Binding="{Binding TicketCode}" Width="120" />
+                        <DataGridTextColumn Header="Amount" Binding="{Binding TotalAmount, StringFormat={}{0:C}}" Width="90" />
+                        <DataGridTextColumn Header="Duration" Binding="{Binding DurationMinutes, StringFormat={}{0} min}" Width="90" />
+                        <DataGridTextColumn Header="Started At" Binding="{Binding StartedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="130" />
+                        <DataGridTextColumn Header="Ended At" Binding="{Binding EndedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="130" />
+                        <DataGridTextColumn Header="Closed By" Binding="{Binding EndedBy}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Audit Log Grid -->
+                <DataGrid x:Name="AuditLogGrid" Grid.Row="2" Visibility="Collapsed" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Timestamp" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="150" />
+                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="160" />
+                        <DataGridTextColumn Header="Target" Binding="{Binding TargetType}" Width="90" />
+                        <DataGridTextColumn Header="Cashier" Binding="{Binding CashierName}" Width="100" />
+                        <DataGridTextColumn Header="Detail JSON" Binding="{Binding DetailJson}" Width="250" />
+                        <DataGridTextColumn Header="SHA-256 Hash" Binding="{Binding Hash}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 9. ALERTS CENTER VIEW -->
+            <Grid x:Name="AlertsView" Visibility="Collapsed" Margin="32,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <TextBlock Text="System Alerts &amp; Hardware Telemetry" Style="{StaticResource DisplayHeading}" />
+                    <Button Content="Acknowledge All" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Click="AckAllAlerts_Click" />
+                </Grid>
+
+                <TextBlock Grid.Row="1" Text="Live notifications from terminals, stock thresholds, and security monitors."
+                           Style="{StaticResource BodyText}" FontSize="12" Foreground="{StaticResource GhostBrush}" Margin="0,6,0,16" />
+
+                <DataGrid x:Name="AlertsGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                          Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                          BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                          AlternatingRowBackground="{StaticResource RaisedBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="90" />
+                        <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="140" />
+                        <DataGridTextColumn Header="Terminal / Source" Binding="{Binding TerminalName}" Width="140" />
+                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*" />
+                        <DataGridTextColumn Header="Time" Binding="{Binding CreatedAt, StringFormat={}{0:HH:mm:ss}}" Width="100" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 10. SETTINGS & TARIFFS VIEW -->
+            <Grid x:Name="SettingsView" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="850" HorizontalAlignment="Left" Margin="32,24">
+                        <TextBlock Text="Venue Configuration &amp; Settings" Style="{StaticResource DisplayHeading}" />
+
+                        <!-- Core Venue Settings -->
+                        <TextBlock Text="VENUE PREFERENCES" Style="{StaticResource CapsLabel}" Margin="0,20,0,8" />
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="VENUE NAME" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                <TextBox x:Name="SettingsVenueName" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="CURRENCY SYMBOL" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                <TextBox x:Name="SettingsCurrencySymbol" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="OPENING FLOAT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                <TextBox x:Name="SettingsFloat" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="TAX RATE (%)" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                <TextBox x:Name="SettingsTax" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="PRINT COST / PAGE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                <TextBox x:Name="SettingsPrintCost" Style="{StaticResource AppTextBox}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Button Content="Save Venue Settings" Style="{StaticResource GoldButton}" HorizontalAlignment="Left" Click="SaveSettings_Click" />
+
+                        <!-- Database Backup & Data Care -->
+                        <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />
+                        <TextBlock Text="DATABASE BACKUP &amp; MAINTENANCE" Style="{StaticResource DisplayHeading}" FontSize="15" />
+                        <TextBlock Text="Generate a live online SQLite WAL backup snapshot using VACUUM INTO."
+                                   Style="{StaticResource BodyText}" FontSize="12" Foreground="{StaticResource GhostBrush}" Margin="0,4,0,12" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Backup Database Now (VACUUM INTO)" Style="{StaticResource GhostButton}" Click="BackupDatabase_Click" />
+                            <TextBlock x:Name="BackupStatusText" Margin="16,0,0,0" Style="{StaticResource MonoData}" VerticalAlignment="Center" Foreground="{StaticResource GoldBrush}" />
+                        </StackPanel>
+
+                        <!-- Cashiers Management -->
+                        <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />
+                        <Grid>
+                            <TextBlock Text="STAFF &amp; CASHIERS" Style="{StaticResource DisplayHeading}" FontSize="15" />
+                            <Button Content="Add Cashier…" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Click="AddCashier_Click" />
+                        </Grid>
+
+                        <DataGrid x:Name="CashiersGrid" Margin="0,12,0,0" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                                  BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                                  AlternatingRowBackground="{StaticResource RaisedBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Username" Binding="{Binding Name}" Width="180" />
+                                <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="120" />
+                                <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="80" />
+                                <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd}}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- Tariffs Management -->
+                        <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />
+                        <Grid>
+                            <TextBlock Text="SESSION TARIFFS &amp; PRICING RULES" Style="{StaticResource DisplayHeading}" FontSize="15" />
+                            <Button Content="Add Tariff…" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Click="AddTariff_Click" />
+                        </Grid>
+
+                        <DataGrid x:Name="TariffsGrid" Margin="0,12,0,0" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                                  BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                                  AlternatingRowBackground="{StaticResource RaisedBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Tariff Name" Binding="{Binding Name}" Width="180" />
+                                <DataGridTextColumn Header="Pricing Model" Binding="{Binding PricingModel}" Width="130" />
+                                <DataGridTextColumn Header="Hourly Rate" Binding="{Binding HourlyRate, StringFormat={}{0:C}}" Width="100" />
+                                <DataGridTextColumn Header="Min Charge" Binding="{Binding MinimumCharge, StringFormat={}{0:C}}" Width="100" />
+                                <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="70" />
+                                <DataGridTextColumn Header="Rules" Binding="{Binding BandsOrRulesSummary}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <!-- Right Inspector Panel (Column 2) -->
+        <Border x:Name="InspectorPanel" Grid.Column="2" Width="300" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="1,0,0,0" Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid Margin="18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Terminal Identity -->
+                    <StackPanel Grid.Row="0">
+                        <Grid>
+                            <TextBlock x:Name="InspectorName" Text="TERMINAL 01" Style="{StaticResource DisplayHeading}" FontSize="17" />
+                            <Button Content="✕" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Padding="6,2" Click="CloseInspector_Click" />
+                        </Grid>
+                        <TextBlock x:Name="InspectorZone" Text="ZONE: MAIN · IP: 192.168.1.101" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,2,0,0" />
+                        <TextBlock x:Name="InspectorStatus" Margin="0,6,0,0" Style="{StaticResource BodyText}" FontWeight="SemiBold" />
+                        <TextBlock x:Name="InspectorTelemetry" Text="CPU: 12% · RAM: 42% · DISK: 120GB" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <!-- Session Info -->
+                    <Border Grid.Row="1" Margin="0,12,0,0" Background="{StaticResource RaisedBrush}" Padding="10" CornerRadius="2">
+                        <StackPanel>
+                            <TextBlock Text="ACTIVE SESSION" Style="{StaticResource CapsLabel}" FontSize="9" />
+                            <TextBlock x:Name="InspectorSession" Margin="0,4,0,0" Style="{StaticResource BodyText}" FontSize="12" TextWrapping="Wrap" />
+                            <TextBlock x:Name="InspectorCharge" Text="Current: $0.00" Style="{StaticResource MonoData}" FontSize="14" Foreground="{StaticResource GoldBrush}" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Session Controls -->
+                    <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                        <TextBlock Text="SESSION CONTROLS" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
+                        <Button Content="Start Walk-up (F2)" Style="{StaticResource GoldButton}" HorizontalAlignment="Stretch" Click="StartPostpaid_Click" />
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="30 min" Style="{StaticResource GhostButton}" Click="StartPrepaid30_Click" />
+                            <Button Grid.Column="2" Content="60 min" Style="{StaticResource GhostButton}" Click="StartPrepaid60_Click" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="120 min" Style="{StaticResource GhostButton}" Click="StartPrepaid120_Click" />
+                            <Button x:Name="RedeemCodeButton" Grid.Column="2" Content="Redeem Code…" Style="{StaticResource GhostButton}" Click="RedeemCode_Click" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="MemberQueryInput" Style="{StaticResource AppTextBox}" FontSize="11" VerticalContentAlignment="Center" />
+                            <Button Grid.Column="1" Content="Member…" Style="{StaticResource GhostButton}" Margin="6,0,0,0" Click="MemberStart_Click" />
+                        </Grid>
+
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="PauseResumeButton" Content="Pause (F3)" Style="{StaticResource GhostButton}" Click="PauseResume_Click" />
+                            <Button x:Name="EndSessionButton" Grid.Column="2" Content="End (F4)" Style="{StaticResource GoldButton}" Click="EndSession_Click" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Remote & Hardware Ops -->
+                    <StackPanel Grid.Row="3" Margin="0,14,0,0">
+                        <TextBlock Text="REMOTE &amp; MAINTENANCE" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="View Screen" Style="{StaticResource GhostButton}" Click="ViewScreen_Click" />
+                            <Button Grid.Column="2" Content="Lock Machine" Style="{StaticResource GhostButton}" Click="LockTerminal_Click" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Maintenance…" Style="{StaticResource GhostButton}" Click="ToggleMaintenance_Click" />
+                            <Button Grid.Column="2" Content="Reserve…" Style="{StaticResource GhostButton}" Click="ReserveTerminal_Click" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Reboot" Style="{StaticResource GhostButton}" Click="RebootTerminal_Click" />
+                            <Button Grid.Column="2" Content="Shutdown" Style="{StaticResource GhostButton}" Click="ShutdownTerminal_Click" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Add Extra POS Line to Session -->
+                    <StackPanel Grid.Row="4" Margin="0,14,0,0">
+                        <TextBlock Text="ADD SNACK / DRINK (F6)" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
+                        <ComboBox x:Name="ProductPicker" FontSize="11" DisplayMemberPath="Name" SelectedValuePath="Id" />
+                        <Button Content="Add to Running Session" Style="{StaticResource GhostButton}" Margin="0,6,0,0" Click="AddProduct_Click" />
+                    </StackPanel>
+
+                    <!-- Chat Drawer -->
+                    <StackPanel Grid.Row="5" Margin="0,14,0,0">
+                        <TextBlock Text="CHAT THREAD (F8)" Style="{StaticResource CapsLabel}" Margin="0,0,0,6" />
+                        <ItemsControl x:Name="ChatItems" MaxHeight="130" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Margin="0,2" TextWrapping="Wrap" Style="{StaticResource BodyText}" FontSize="11">
+                                        <Run Text="{Binding From, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                                        <Run Text="{Binding Message, Mode=OneWay}" Foreground="{StaticResource InkBrush}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ChatInput" MaxLength="300" FontSize="11" Style="{StaticResource AppTextBox}" />
+                            <Button x:Name="ChatSendButton" Grid.Column="1" Content="Send" Style="{StaticResource GhostButton}" Margin="6,0,0,0" Click="ChatSend_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
         </Border>
     </Grid>
 </Window>

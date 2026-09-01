@@ -128,7 +128,12 @@ public class SessionMonitor : BackgroundService
                 (int)elapsed.TotalMinutes,
                 remaining,
                 session.PlannedEndAt,
-                session.Status == SessionStatus.Paused));
+                session.Status == SessionStatus.Paused,
+                session.Terminal.MaintenanceReason,
+                session.Terminal.ReservedFor,
+                session.Terminal.CpuTemp,
+                session.Terminal.GpuTemp,
+                session.Terminal.RamPercent));
 
             await _terminals.Clients.Group(TerminalGroups.Terminal(session.TerminalId)).TimeSync(
                 now, session.PlannedEndAt, amount);
