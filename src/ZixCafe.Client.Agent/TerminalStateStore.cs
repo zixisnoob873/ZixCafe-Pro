@@ -50,4 +50,55 @@ public static class TerminalStateStore
             ProtectedData.Protect(Encoding.UTF8.GetBytes(secret), null, DataProtectionScope.CurrentUser));
         File.WriteAllText(FilePath, JsonSerializer.Serialize(new StoredState(serverUrl, name, protectedSecret)));
     }
+
+    private static string CountdownCachePath => Path.Combine(Dir, "session_cache.json");
+
+    public static void SaveCountdownCache(DateTime? plannedEndUtc)
+    {
+        try
+        {
+            Directory.CreateDirectory(Dir);
+            if (plannedEndUtc.HasValue)
+            {
+                File.WriteAllText(CountdownCachePath, JsonSerializer.Serialize(plannedEndUtc.Value));
+            }
+            else
+            {
+                ClearCountdownCache();
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    public static DateTime? LoadCachedCountdown()
+    {
+        try
+        {
+            if (File.Exists(CountdownCachePath))
+            {
+                var content = File.ReadAllText(CountdownCachePath);
+                return JsonSerializer.Deserialize<DateTime>(content);
+            }
+        }
+        catch
+        {
+        }
+        return null;
+    }
+
+    public static void ClearCountdownCache()
+    {
+        try
+        {
+            if (File.Exists(CountdownCachePath))
+            {
+                File.Delete(CountdownCachePath);
+            }
+        }
+        catch
+        {
+        }
+    }
 }

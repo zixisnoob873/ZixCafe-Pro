@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UserSecretsId>dotnet-ZixCafe.Client.Service-2484ecd7-7acc-45d2-93b4-5b61ec47c084</UserSecretsId>
   </PropertyGroup>
 

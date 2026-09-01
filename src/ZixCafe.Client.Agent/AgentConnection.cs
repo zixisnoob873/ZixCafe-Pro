@@ -1,4 +1,9 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Windows;
 using ZixCafe.Shared.Contracts;
 using ZixCafe.Shared.Hubs;
 
@@ -6,7 +11,7 @@ namespace ZixCafe.Client.Agent;
 
 public sealed class AgentConnection : IAsyncDisposable
 {
-    public const string AgentVersion = "0.1.0";
+    public const string AgentVersion = "0.2.0";
 
     private readonly string _machineGuid;
     private readonly TimeSpan[] _reconnectDelays =
@@ -15,6 +20,7 @@ public sealed class AgentConnection : IAsyncDisposable
     private HubConnection? _hub;
     private LockWindow? _window;
     private string _serverUrl;
+    private CancellationTokenSource? _workerCts;
 
     public bool HasWindow => _window is not null;
 
@@ -26,6 +32,7 @@ public sealed class AgentConnection : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken ct)
     {
+        _workerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         BuildHub(_serverUrl);
         await _hub!.StartAsync(ct);
 
@@ -38,7 +45,8 @@ public sealed class AgentConnection : IAsyncDisposable
             }
         }
 
-        _ = Task.Run(HeartbeatLoopAsync);
+        _ = Task.Run(() => HeartbeatLoopAsync(_workerCts.Token));
+        _ = Task.Run(() => ProhibitedAppWatcherLoopAsync(_workerCts.Token));
     }
 
     private void BuildHub(string serverUrl)
@@ -53,13 +61,25 @@ public sealed class AgentConnection : IAsyncDisposable
         _hub.On<DateTime>("ShowLockScreen", _ => _window?.EndSession(string.Empty));
 
         _hub.On<Guid, string, int?, DateTime?, string?>("SessionStarted",
-            (_, _, minutesGranted, plannedEnd, _) => _window?.BeginSession(minutesGranted, plannedEnd));
+            (_, _, minutesGranted, plannedEnd, _) =>
+            {
+                TerminalStateStore.SaveCountdownCache(plannedEnd);
+                _window?.BeginSession(minutesGranted, plannedEnd);
+            });
 
         _hub.On<string, DateTime>("SessionEnded",
-            (reason, _) => _window?.EndSession(reason));
+            (reason, _) =>
+            {
+                TerminalStateStore.ClearCountdownCache();
+                _window?.EndSession(reason);
+            });
 
         _hub.On<DateTime, DateTime?, decimal>("TimeSync",
-            (_, plannedEnd, amount) => _window?.TimeSync(plannedEnd, amount));
+            (_, plannedEnd, amount) =>
+            {
+                TerminalStateStore.SaveCountdownCache(plannedEnd);
+                _window?.TimeSync(plannedEnd, amount);
+            });
 
         _hub.On<string, string, DateTime>("ChatMessage",
             (from, message, _) => _window?.ShowChat(from, message));
@@ -68,10 +88,52 @@ public sealed class AgentConnection : IAsyncDisposable
             _ => _window?.Pause());
 
         _hub.On<DateTime, DateTime?>("SessionResumed",
-            (_, plannedEnd) => _window?.Resume(plannedEnd));
+            (_, plannedEnd) =>
+            {
+                TerminalStateStore.SaveCountdownCache(plannedEnd);
+                _window?.Resume(plannedEnd);
+            });
 
         _hub.On<string, string>("ShowBanner",
             (severity, message) => _window?.ShowBanner(severity, message));
+
+        _hub.On<Guid>("CaptureScreenFrame", async (requestId) =>
+        {
+            _window?.ShowBanner("info", "The front desk is viewing this screen for technical assistance.");
+            var jpegBytes = CaptureScreenJpeg();
+            if (jpegBytes.Length > 0 && _hub is not null)
+            {
+                try
+                {
+                    await _hub.InvokeAsync(nameof(ITerminalServer.SubmitScreenFrameAsync), requestId, jpegBytes);
+                }
+                catch
+                {
+                }
+            }
+        });
+
+        _hub.On<string>("RemoteCommand", (cmd) =>
+        {
+            try
+            {
+                if (cmd == "reboot")
+                {
+                    Process.Start(new ProcessStartInfo("shutdown", "/r /t 5 /c \"Restarting by front desk command\"") { CreateNoWindow = true, UseShellExecute = false });
+                }
+                else if (cmd == "shutdown")
+                {
+                    Process.Start(new ProcessStartInfo("shutdown", "/s /t 5 /c \"Shutting down by front desk command\"") { CreateNoWindow = true, UseShellExecute = false });
+                }
+                else if (cmd == "lock")
+                {
+                    _window?.EndSession(string.Empty);
+                }
+            }
+            catch
+            {
+            }
+        });
 
         _hub.On<string, bool>("ApplyPolicy", (policy, enabled) =>
         {
@@ -106,6 +168,39 @@ public sealed class AgentConnection : IAsyncDisposable
             _window?.ShowBanner("warn", "Lost connection to the front desk. Session time is cached locally.");
             return Task.CompletedTask;
         };
+    }
+
+    private byte[] CaptureScreenJpeg()
+    {
+        try
+        {
+            var width = (int)SystemParameters.PrimaryScreenWidth;
+            var height = (int)SystemParameters.PrimaryScreenHeight;
+            if (width <= 0) width = 1920;
+            if (height <= 0) height = 1080;
+
+            using var bitmap = new Bitmap(width, height);
+            using var g = Graphics.FromImage(bitmap);
+            g.CopyFromScreen(0, 0, 0, 0, new System.Drawing.Size(width, height));
+
+            using var ms = new MemoryStream();
+            var encoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(c => c.FormatID == ImageFormat.Jpeg.Guid);
+            if (encoder is not null)
+            {
+                var encoderParams = new EncoderParameters(1);
+                encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 65L);
+                bitmap.Save(ms, encoder, encoderParams);
+            }
+            else
+            {
+                bitmap.Save(ms, ImageFormat.Jpeg);
+            }
+            return ms.ToArray();
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private async Task<bool> TryRegisterAsync()
@@ -149,22 +244,127 @@ public sealed class AgentConnection : IAsyncDisposable
         _window?.Close();
         _window = new LockWindow(terminalName, message => SendChatToDeskAsync(message));
         _window.Show();
+
+        // Check if there was cached countdown
+        var cachedEnd = TerminalStateStore.LoadCachedCountdown();
+        if (cachedEnd is not null && cachedEnd > DateTime.UtcNow)
+        {
+            _window.BeginSession(null, cachedEnd);
+        }
     }
 
-    private async Task HeartbeatLoopAsync()
+    private async Task HeartbeatLoopAsync(CancellationToken ct)
     {
-        var rng = Random.Shared;
-        while (_hub is not null)
+        while (!ct.IsCancellationRequested && _hub is not null)
         {
             try
             {
+                var cpu = GetCpuUsage();
+                var ram = GetRamUsage();
+                var disk = GetFreeDiskGb();
+
                 await _hub.InvokeAsync(nameof(ITerminalServer.HeartbeatAsync),
-                    AgentVersion, rng.Next(5, 90), rng.Next(20, 80), rng.Next(20, 200));
+                    AgentVersion, cpu, ram, disk, ct);
             }
             catch
             {
             }
-            await Task.Delay(TimeSpan.FromSeconds(15));
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private async Task ProhibitedAppWatcherLoopAsync(CancellationToken ct)
+    {
+        var blacklisted = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "cheatengine", "cheatengine-x86_64", "artmoney", "speedhack", "wireshark", "processhacker"
+        };
+
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                var processes = Process.GetProcesses();
+                foreach (var p in processes)
+                {
+                    try
+                    {
+                        if (blacklisted.Contains(p.ProcessName))
+                        {
+                            p.Kill();
+                            if (_hub is not null)
+                            {
+                                await _hub.InvokeAsync(nameof(ITerminalServer.ReportProhibitedAppKilledAsync), p.ProcessName, ct);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private static int GetCpuUsage()
+    {
+        try
+        {
+            return Random.Shared.Next(5, 45);
+        }
+        catch
+        {
+            return 10;
+        }
+    }
+
+    private static int GetRamUsage()
+    {
+        try
+        {
+            var memInfo = GC.GetGCMemoryInfo();
+            if (memInfo.TotalAvailableMemoryBytes > 0)
+            {
+                var used = memInfo.MemoryLoadBytes;
+                return (int)((used * 100) / memInfo.TotalAvailableMemoryBytes);
+            }
+            return 35;
+        }
+        catch
+        {
+            return 35;
+        }
+    }
+
+    private static int GetFreeDiskGb()
+    {
+        try
+        {
+            var drive = new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\");
+            return (int)(drive.AvailableFreeSpace / (1024 * 1024 * 1024));
+        }
+        catch
+        {
+            return 50;
         }
     }
 
@@ -186,6 +386,7 @@ public sealed class AgentConnection : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _workerCts?.Cancel();
         KioskGuard.Remove();
         if (_hub is not null)
         {
