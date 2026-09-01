@@ -673,13 +673,41 @@
 
                         <!-- Database Backup & Data Care -->
                         <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />
-                        <TextBlock Text="DATABASE BACKUP &amp; MAINTENANCE" Style="{StaticResource DisplayHeading}" FontSize="15" />
-                        <TextBlock Text="Generate a live online SQLite WAL backup snapshot using VACUUM INTO."
+                        <Grid>
+                            <TextBlock Text="DATABASE BACKUP &amp; RESTORE" Style="{StaticResource DisplayHeading}" FontSize="15" />
+                            <TextBlock x:Name="DatabaseInfoText" Text="Loading database metrics..." Style="{StaticResource MonoData}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource GhostBrush}" />
+                        </Grid>
+                        <TextBlock Text="Generate online SQLite WAL snapshots with VACUUM INTO, export copies, or load and restore from any existing backup file."
                                    Style="{StaticResource BodyText}" FontSize="12" Foreground="{StaticResource GhostBrush}" Margin="0,4,0,12" />
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Backup Database Now (VACUUM INTO)" Style="{StaticResource GhostButton}" Click="BackupDatabase_Click" />
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button Content="Backup Database Now" Style="{StaticResource GoldButton}" Click="BackupDatabase_Click" />
+                            <Button Content="Export Backup To…" Style="{StaticResource GhostButton}" Margin="10,0,0,0" Click="ExportBackup_Click" />
+                            <Button Content="Load &amp; Restore From File…" Style="{StaticResource GhostButton}" Margin="10,0,0,0" Click="RestoreFromFile_Click" />
                             <TextBlock x:Name="BackupStatusText" Margin="16,0,0,0" Style="{StaticResource MonoData}" VerticalAlignment="Center" Foreground="{StaticResource GoldBrush}" />
                         </StackPanel>
+
+                        <!-- Available Backups Grid -->
+                        <TextBlock Text="AVAILABLE LOCAL BACKUPS" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,8,0,6" />
+                        <DataGrid x:Name="BackupsGrid" MaxHeight="180" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                                  BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                                  AlternatingRowBackground="{StaticResource RaisedBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Backup File" Binding="{Binding FileName}" Width="260" />
+                                <DataGridTextColumn Header="Created (UTC)" Binding="{Binding CreatedAtUtc, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="160" />
+                                <DataGridTextColumn Header="Size" Binding="{Binding SizeBytes}" Width="100" />
+                                <DataGridTextColumn Header="Path" Binding="{Binding FullPath}" Width="*" />
+                                <DataGridTemplateColumn Header="Action" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="Restore" Padding="8,2" FontSize="11" Style="{StaticResource GhostButton}"
+                                                    Tag="{Binding FullPath}" Click="RestoreGridBackup_Click" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
 
                         <!-- Cashiers Management -->
                         <Separator Background="{StaticResource LineBrush}" Margin="0,28,0,20" />

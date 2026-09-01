@@ -374,3 +374,9 @@ public record ChatHistoryItemDto(
     string Message,
     bool IsFromCustomer,
     DateTime SentAtUtc);
+
+public record BackupFileInfoDto(
+    string FileName,
+    string FullPath,
+    long SizeBytes,
+    DateTime CreatedAtUtc);

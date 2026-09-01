@@ -198,5 +198,7 @@ public interface IDashboardServer
 
     // Database & Backup
     Task<ResultResponse> TriggerBackupAsync(string? targetDirectory, string cashierName);
+    Task<IReadOnlyList<BackupFileInfoDto>> ListBackupsAsync();
+    Task<ResultResponse> RestoreBackupAsync(string backupFilePath, string cashierName);
     Task<string> GetDatabaseInfoAsync();
 }

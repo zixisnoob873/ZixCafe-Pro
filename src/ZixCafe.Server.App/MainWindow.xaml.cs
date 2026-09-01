@@ -1120,6 +1120,24 @@ public partial class MainWindow : Window
 
         _allTariffs = await _dashboard!.InvokeAsync<IReadOnlyList<TariffDto>>(nameof(IDashboardServer.GetTariffsAsync));
         TariffsGrid.ItemsSource = _allTariffs;
+
+        await RefreshBackupsListAsync();
+    }
+
+    private async Task RefreshBackupsListAsync()
+    {
+        try
+        {
+            var dbInfo = await _dashboard!.InvokeAsync<string>(nameof(IDashboardServer.GetDatabaseInfoAsync));
+            DatabaseInfoText.Text = dbInfo;
+
+            var backups = await _dashboard!.InvokeAsync<IReadOnlyList<BackupFileInfoDto>>(nameof(IDashboardServer.ListBackupsAsync));
+            BackupsGrid.ItemsSource = backups;
+        }
+        catch
+        {
+            // Ignore UI refresh transient errors
+        }
     }
 
     private async void SaveSettings_Click(object sender, RoutedEventArgs e)
@@ -1143,7 +1161,101 @@ public partial class MainWindow : Window
     {
         BackupStatusText.Text = "Creating online SQLite backup snapshot...";
         var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.TriggerBackupAsync), (string?)null, _cashierName);
-        BackupStatusText.Text = res.Ok ? $"Backup snapshot generated at {DateTime.Now:HH:mm:ss}" : $"Backup failed: {res.Error}";
+        BackupStatusText.Text = res.Ok ? $"Backup generated at {DateTime.Now:HH:mm:ss}" : $"Backup failed: {res.Error}";
+        await RefreshBackupsListAsync();
+    }
+
+    private async void ExportBackup_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export Database Backup",
+            Filter = "SQLite Database (*.db)|*.db",
+            FileName = $"zixcafe_export_{DateTime.Now:yyyyMMdd_HHmmss}.db"
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            var targetDir = System.IO.Path.GetDirectoryName(dialog.FileName);
+            BackupStatusText.Text = "Exporting database backup...";
+            var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.TriggerBackupAsync), targetDir, _cashierName);
+            if (res.Ok)
+            {
+                MessageBox.Show(this, $"Backup exported successfully to:\n{res.Error ?? dialog.FileName}", "Export Backup", MessageBoxButton.OK, MessageBoxImage.Information);
+                BackupStatusText.Text = $"Exported at {DateTime.Now:HH:mm:ss}";
+            }
+            else
+            {
+                MessageBox.Show(this, res.Error, "Export Backup", MessageBoxButton.OK, MessageBoxImage.Warning);
+                BackupStatusText.Text = "Export failed.";
+            }
+            await RefreshBackupsListAsync();
+        }
+    }
+
+    private async void RestoreFromFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select Backup File to Restore",
+            Filter = "SQLite Database (*.db)|*.db|All Files (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            await PerformDatabaseRestoreAsync(dialog.FileName);
+        }
+    }
+
+    private async void RestoreGridBackup_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string filePath } && !string.IsNullOrWhiteSpace(filePath))
+        {
+            await PerformDatabaseRestoreAsync(filePath);
+        }
+    }
+
+    private async Task PerformDatabaseRestoreAsync(string backupFilePath)
+    {
+        var confirm = MessageBox.Show(this,
+            $"WARNING: Restoring from a backup will replace your current live database.\n\nSource: {System.IO.Path.GetFileName(backupFilePath)}\n\nA pre-restore safety copy of your current database will be saved automatically.\n\nDo you want to continue?",
+            "Confirm Database Restore",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        // Challenge for Manager PIN authorization
+        using var scope = App.Services.CreateScope();
+        var authService = scope.ServiceProvider.GetRequiredService<AuthAndCashierService>();
+        var pinModal = new ManagerPinPromptWindow(authService, "Authorize Database Restore");
+        if (pinModal.ShowDialog() != true) return;
+
+        BackupStatusText.Text = "Restoring database from backup...";
+        var res = await _dashboard!.InvokeAsync<ResultResponse>(nameof(IDashboardServer.RestoreBackupAsync), backupFilePath, _cashierName);
+
+        if (res.Ok)
+        {
+            MessageBox.Show(this,
+                $"Database restored successfully from {System.IO.Path.GetFileName(backupFilePath)}!\n\nAll views and cached records have been refreshed.",
+                "Database Restored",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            BackupStatusText.Text = $"Restored at {DateTime.Now:HH:mm:ss}";
+
+            // Refresh all views to reflect restored data
+            await RefreshSettingsViewAsync();
+            await RefreshProductsAsync();
+            await RefreshMembersAsync();
+            await RefreshTicketsAsync();
+            await RefreshReportsAsync();
+            await RefreshDeskAsync();
+        }
+        else
+        {
+            MessageBox.Show(this, $"Restore failed: {res.Error}", "Database Restore Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            BackupStatusText.Text = "Restore failed.";
+        }
     }
 
     private async void AddCashier_Click(object sender, RoutedEventArgs e)

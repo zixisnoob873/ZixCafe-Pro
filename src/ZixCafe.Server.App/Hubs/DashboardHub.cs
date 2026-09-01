@@ -324,6 +324,12 @@ public class DashboardHub : Hub<IDashboardClient>, IDashboardServer
     public Task<ResultResponse> TriggerBackupAsync(string? targetDirectory, string cashierName)
         => _backup.TriggerBackupAsync(targetDirectory, cashierName);
 
+    public Task<IReadOnlyList<BackupFileInfoDto>> ListBackupsAsync()
+        => _backup.ListBackupsAsync();
+
+    public Task<ResultResponse> RestoreBackupAsync(string backupFilePath, string cashierName)
+        => _backup.RestoreBackupAsync(backupFilePath, cashierName);
+
     public Task<string> GetDatabaseInfoAsync()
         => _backup.GetDatabaseInfoAsync();
 

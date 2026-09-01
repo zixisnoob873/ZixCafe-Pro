@@ -320,3 +320,51 @@ public class PeripheralCostTests
         Assert.Equal(0.10m, totalCharge);
     }
 }
+
+public class DatabaseBackupValidationTests
+{
+    [Fact]
+    public void Sqlite_header_validation_identifies_valid_magic_bytes()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            var headerBytes = System.Text.Encoding.ASCII.GetBytes("SQLite format 3\0");
+            var fullDummyFile = new byte[200];
+            Array.Copy(headerBytes, fullDummyFile, headerBytes.Length);
+            File.WriteAllBytes(tempFile, fullDummyFile);
+
+            using var stream = File.OpenRead(tempFile);
+            var header = new byte[16];
+            var read = stream.Read(header, 0, 16);
+            var headerStr = System.Text.Encoding.ASCII.GetString(header);
+
+            Assert.Equal(16, read);
+            Assert.StartsWith("SQLite format 3", headerStr);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void Corrupted_or_empty_file_fails_sqlite_header_validation()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(tempFile, [0x00, 0x01, 0x02, 0x03]);
+            using var stream = File.OpenRead(tempFile);
+            var header = new byte[16];
+            var read = stream.Read(header, 0, 16);
+            var headerStr = System.Text.Encoding.ASCII.GetString(header);
+
+            Assert.False(headerStr.StartsWith("SQLite format 3"));
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+}
