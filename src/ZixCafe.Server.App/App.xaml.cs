@@ -1,5 +1,6 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ZixCafe.Infrastructure;
 
@@ -24,7 +25,11 @@ public partial class App : Application
         {
             Server = ServerHostFactory.Build(port: 40000, $"Data Source={dbFile}");
 
-            await DbInitializer.InitializeAsync(Services.GetRequiredService<Infrastructure.ZixCafeDbContext>());
+            var dbFactory = Services.GetRequiredService<IDbContextFactory<ZixCafeDbContext>>();
+            await using (var db = await dbFactory.CreateDbContextAsync())
+            {
+                await DbInitializer.InitializeAsync(db);
+            }
 
             _ = Server.StartAsync();
         }

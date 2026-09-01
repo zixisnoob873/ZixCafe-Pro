@@ -11,7 +11,14 @@ public static class DbInitializer
 {
     public static async Task InitializeAsync(ZixCafeDbContext db)
     {
-        await db.Database.MigrateAsync();
+        try
+        {
+            await db.Database.MigrateAsync();
+        }
+        catch (Exception)
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
 
         await db.Database.OpenConnectionAsync();
         await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON;");

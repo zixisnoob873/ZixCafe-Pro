@@ -21,6 +21,7 @@ public static class ServerHostFactory
         builder.Services.AddDbContextFactory<ZixCafeDbContext>(o =>
         {
             o.UseSqlite(connectionString);
+            o.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             if (Environment.GetEnvironmentVariable("ZIX_LOG_SQL") == "1")
             {
                 o.LogTo(m => Console.WriteLine(m), LogLevel.Information);

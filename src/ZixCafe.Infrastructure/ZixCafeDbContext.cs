@@ -35,6 +35,12 @@ public class ZixCafeDbContext(DbContextOptions<ZixCafeDbContext> options) : DbCo
     public DbSet<TerminalHardwareBaseline> HardwareBaselines => Set<TerminalHardwareBaseline>();
     public DbSet<MasterSystemSettings> SystemSettings => Set<MasterSystemSettings>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TerminalHardwareBaseline>(e =>
