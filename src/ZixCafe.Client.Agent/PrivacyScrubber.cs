@@ -58,7 +58,8 @@ public static class PrivacyScrubber
 
         try
         {
-            foreach (var proc in Process.GetProcesses())
+            var processes = Process.GetProcesses();
+            foreach (var proc in processes)
             {
                 try
                 {
@@ -69,6 +70,10 @@ public static class PrivacyScrubber
                 }
                 catch
                 {
+                }
+                finally
+                {
+                    proc.Dispose();
                 }
             }
         }
