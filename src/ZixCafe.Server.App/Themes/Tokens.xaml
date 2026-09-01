@@ -2,39 +2,42 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-    ZixCafe Pro design tokens — Matte Obsidian Black + Amber Gold + Semantic Status
+    ZixCafe Pro Enterprise SaaS Design Tokens — Minimalist Slate & Indigo (Linear / Fluent Aesthetic)
     -->
 
     <!-- Core Surfaces & Backgrounds -->
-    <Color x:Key="VoidColor">#0C0A09</Color>
-    <Color x:Key="PanelColor">#18181B</Color>
-    <Color x:Key="RaisedColor">#27272A</Color>
-    <Color x:Key="HoverColor">#323238</Color>
-    <Color x:Key="SelectedColor">#3F3F46</Color>
+    <Color x:Key="VoidColor">#090D16</Color>
+    <Color x:Key="PanelColor">#0F172A</Color>
+    <Color x:Key="RaisedColor">#1E293B</Color>
+    <Color x:Key="HoverColor">#283548</Color>
+    <Color x:Key="SelectedColor">#334155</Color>
 
     <!-- Hairline Borders & Dividers -->
-    <Color x:Key="LineColor">#3F3F46</Color>
-    <Color x:Key="LineSubtleColor">#27272A</Color>
+    <Color x:Key="LineColor">#334155</Color>
+    <Color x:Key="LineSubtleColor">#1E293B</Color>
 
     <!-- Typography Text Colors -->
-    <Color x:Key="InkColor">#FAFAF9</Color>
-    <Color x:Key="GhostColor">#A1A1AA</Color>
-    <Color x:Key="MutedColor">#71717A</Color>
+    <Color x:Key="InkColor">#F8FAFC</Color>
+    <Color x:Key="GhostColor">#94A3B8</Color>
+    <Color x:Key="MutedColor">#64748B</Color>
 
-    <!-- Accent: Amber Gold -->
-    <Color x:Key="GoldColor">#FBBF24</Color>
-    <Color x:Key="GoldDeepColor">#D97706</Color>
-    <Color x:Key="GoldSubtleColor">#2A1F0A</Color>
+    <!-- Primary Accent: Refined Indigo / Cobalt -->
+    <Color x:Key="BrandColor">#6366F1</Color>
+    <Color x:Key="BrandDeepColor">#4F46E5</Color>
+    <Color x:Key="BrandSubtleColor">#1E1B4B</Color>
+    <Color x:Key="GoldColor">#6366F1</Color>
+    <Color x:Key="GoldDeepColor">#4F46E5</Color>
+    <Color x:Key="GoldSubtleColor">#1E1B4B</Color>
 
     <!-- Semantic Status Colors -->
-    <Color x:Key="RunColor">#22C55E</Color>
-    <Color x:Key="RunSubtleColor">#052E16</Color>
-    <Color x:Key="WarnColor">#F97316</Color>
-    <Color x:Key="WarnSubtleColor">#431407</Color>
+    <Color x:Key="RunColor">#10B981</Color>
+    <Color x:Key="RunSubtleColor">#064E3B</Color>
+    <Color x:Key="WarnColor">#F59E0B</Color>
+    <Color x:Key="WarnSubtleColor">#451A03</Color>
     <Color x:Key="AlertColor">#EF4444</Color>
     <Color x:Key="AlertSubtleColor">#450A0A</Color>
-    <Color x:Key="InfoColor">#06B6D4</Color>
-    <Color x:Key="InfoSubtleColor">#083344</Color>
+    <Color x:Key="InfoColor">#38BDF8</Color>
+    <Color x:Key="InfoSubtleColor">#082F49</Color>
 
     <!-- Solid Brushes -->
     <SolidColorBrush x:Key="VoidBrush" Color="{StaticResource VoidColor}" />
@@ -50,9 +53,13 @@
     <SolidColorBrush x:Key="GhostBrush" Color="{StaticResource GhostColor}" />
     <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
 
-    <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource GoldColor}" />
-    <SolidColorBrush x:Key="GoldDeepBrush" Color="{StaticResource GoldDeepColor}" />
-    <SolidColorBrush x:Key="GoldSubtleBrush" Color="{StaticResource GoldSubtleColor}" />
+    <SolidColorBrush x:Key="BrandBrush" Color="{StaticResource BrandColor}" />
+    <SolidColorBrush x:Key="BrandDeepBrush" Color="{StaticResource BrandDeepColor}" />
+    <SolidColorBrush x:Key="BrandSubtleBrush" Color="{StaticResource BrandSubtleColor}" />
+
+    <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource BrandColor}" />
+    <SolidColorBrush x:Key="GoldDeepBrush" Color="{StaticResource BrandDeepColor}" />
+    <SolidColorBrush x:Key="GoldSubtleBrush" Color="{StaticResource BrandSubtleColor}" />
 
     <SolidColorBrush x:Key="RunBrush" Color="{StaticResource RunColor}" />
     <SolidColorBrush x:Key="RunSubtleBrush" Color="{StaticResource RunSubtleColor}" />
@@ -63,13 +70,16 @@
     <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
     <SolidColorBrush x:Key="InfoSubtleBrush" Color="{StaticResource InfoSubtleColor}" />
 
-    <SolidColorBrush x:Key="TextOnGoldBrush" Color="{StaticResource VoidColor}" />
+    <SolidColorBrush x:Key="TextOnGoldBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextOnBrandBrush" Color="#FFFFFF" />
 
-    <!-- Geometry / Dimensions -->
+    <!-- Geometry / Dimensions (8px Grid Hierarchy) -->
     <Thickness x:Key="HairlineThickness">1</Thickness>
     <Thickness x:Key="CardPadding">16</Thickness>
     <CornerRadius x:Key="TileRadius">8</CornerRadius>
-    <CornerRadius x:Key="InputRadius">5</CornerRadius>
-    <CornerRadius x:Key="ButtonRadius">5</CornerRadius>
-    <GridLength x:Key="NavWidth">220</GridLength>
+    <CornerRadius x:Key="CardRadius">8</CornerRadius>
+    <CornerRadius x:Key="InputRadius">6</CornerRadius>
+    <CornerRadius x:Key="ButtonRadius">6</CornerRadius>
+    <CornerRadius x:Key="PillRadius">999</CornerRadius>
+    <GridLength x:Key="NavWidth">240</GridLength>
 </ResourceDictionary>

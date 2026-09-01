@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:rack="clr-namespace:ZixCafe.Server.App.Rack"
-        Title="ZixCafe Pro — Equilibrium Command Center"
+        Title="ZixCafe Pro — Enterprise Operations &amp; Admin Suite"
         Width="1440" Height="900" MinWidth="1180" MinHeight="720"
         Background="{StaticResource VoidBrush}"
         FontFamily="{StaticResource BodyFont}"
@@ -33,7 +33,7 @@
                     <ColumnDefinition Width="Auto" />
                     <!-- Module Navigation Ribbon -->
                     <ColumnDefinition Width="*" />
-                    <!-- Live Digital Clock & Date -->
+                    <!-- Live Digital Clock & Role Badge -->
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
@@ -43,7 +43,7 @@
                           Data="{StaticResource ZixBoltGeometry}" Stretch="Uniform" VerticalAlignment="Center" />
                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="ZIXCAFE PRO" Style="{StaticResource DisplayHeading}" FontSize="15" Foreground="{StaticResource InkBrush}" />
-                        <TextBlock x:Name="LicenseRibbonText" Text="COMMERCIAL EDITION" Style="{StaticResource MonoData}" FontSize="8.5" Foreground="{StaticResource GoldBrush}" />
+                        <TextBlock x:Name="LicenseRibbonText" Text="ENTERPRISE EDITION" Style="{StaticResource MonoData}" FontSize="8.5" Foreground="{StaticResource GoldBrush}" />
                     </StackPanel>
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Background="{StaticResource LineBrush}" Margin="16,4" />
                 </StackPanel>
@@ -51,72 +51,95 @@
                 <!-- Top Module Navigation Ribbon RadioButtons -->
                 <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
+                        <!-- Operational Workflow Tabs (Visible to Employee and Admin) -->
                         <RadioButton x:Name="NavRack" GroupName="nav" IsChecked="True" Style="{StaticResource RibbonNavButton}" Checked="NavRack_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconHome}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Home / Rack (F1)" HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </RadioButton>
-
-                        <RadioButton x:Name="NavDesk" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavDesk_Checked">
-                            <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconCoin}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Desk &amp; Shifts" HorizontalAlignment="Center" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconHome}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Station Rack (F1)" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavSales" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavSales_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconCafe}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Cafeteria / POS (F5)" HorizontalAlignment="Center" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconCafe}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Cafeteria POS (F5)" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavTickets" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavTickets_Checked">
+                        <RadioButton x:Name="NavDesk" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavDesk_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconTicket}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Tickets / Vouchers" HorizontalAlignment="Center" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconCoin}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Desk &amp; Shifts" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- Admin CMS Management Suite (RBAC Protected: Admin/Manager Only) -->
+                        <RadioButton x:Name="NavFleet" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavFleet_Checked">
+                            <StackPanel HorizontalAlignment="Center" Margin="6,2">
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconTerminal}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Station Fleet CMS" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton x:Name="NavTariffs" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavTariffs_Checked">
+                            <StackPanel HorizontalAlignment="Center" Margin="6,2">
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconZap}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Tariffs &amp; Pricing CMS" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavMembers" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavMembers_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconMembers}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Members Club" HorizontalAlignment="Center" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconMembers}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Members Club CMS" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton x:Name="NavStaff" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavStaff_Checked">
+                            <StackPanel HorizontalAlignment="Center" Margin="6,2">
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconUserPlus}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Staff &amp; Shifts CMS" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavInventory" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavInventory_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconInventory}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
-                                <TextBlock Text="Inventory" HorizontalAlignment="Center" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconInventory}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Inventory CMS" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton x:Name="NavTickets" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavTickets_Checked">
+                            <StackPanel HorizontalAlignment="Center" Margin="6,2">
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconTicket}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <TextBlock Text="Tickets &amp; Vouchers" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavPeripherals" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavPeripherals_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconPrinter}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconPrinter}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
                                 <TextBlock Text="Print &amp; USB" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavReports" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavReports_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconChart}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconChart}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
                                 <TextBlock Text="Reports &amp; Audit" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavAlerts" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavAlerts_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconAlert}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconAlert}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
                                 <TextBlock Text="Alerts Center" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
 
                         <RadioButton x:Name="NavSettings" GroupName="nav" Style="{StaticResource RibbonNavButton}" Checked="NavSettings_Checked">
                             <StackPanel HorizontalAlignment="Center" Margin="6,2">
-                                <Path Width="16" Height="16" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconGear}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
+                                <Path Width="15" Height="15" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Data="{StaticResource IconGear}" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,3" />
                                 <TextBlock Text="Settings" HorizontalAlignment="Center" />
                             </StackPanel>
                         </RadioButton>
@@ -130,7 +153,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Right Live Digital Clock & Full Date Header -->
+                <!-- Right Live Digital Clock & Role Badge -->
                 <Border Grid.Column="2" Background="{StaticResource RaisedBrush}"
                         BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                         CornerRadius="4" Padding="12,4" Margin="10,0,0,0" VerticalAlignment="Center">
@@ -166,7 +189,7 @@
 
                     <Separator Background="{StaticResource LineBrush}" Margin="8,2" />
 
-                    <!-- Power & System Controls -->
+                    <!-- Power & Floor Controls -->
                     <TextBlock Text="POWER &amp; FLOOR:" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <Button Content="⚡ Wake (WoL)" Style="{StaticResource ActionToolbarButton}" Margin="0,0,4,0" Click="WakeWoL_Click" ToolTip="Send Wake-on-LAN packet to selected PC" />
                     <Button Content="⚡ Wake All" Style="{StaticResource ActionToolbarButton}" Margin="0,0,4,0" Click="WakeAllWoL_Click" ToolTip="Send Wake-on-LAN to all offline machines" />
@@ -198,162 +221,119 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===================================================================== -->
-            <!-- LEFT DOCKED INSPECTOR TABBED PANEL                                    -->
+            <!-- LEFT INSPECTOR TABBED DOCK                                            -->
             <!-- ===================================================================== -->
-            <Border x:Name="InspectorPanel" Grid.Column="0" Background="{StaticResource PanelBrush}"
+            <Border Grid.Column="0" Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <!-- Inspector Header & Close -->
-                        <RowDefinition Height="Auto" />
-                        <!-- Inspector Body Tabs -->
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                    <TabControl Background="Transparent" BorderThickness="0">
+                        <!-- TAB 1: WORKSTATION INSPECTOR -->
+                        <TabItem Header="Station">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10">
+                                <StackPanel x:Name="StationInspectorPanel">
+                                    <TextBlock x:Name="InspectorTitle" Text="STATION INSPECTOR" Style="{StaticResource CapsLabel}" FontSize="10" Foreground="{StaticResource GhostBrush}" />
+                                    <TextBlock x:Name="InspectorStationName" Text="NO STATION SELECTED" Style="{StaticResource DisplayHeading}" FontSize="15" Margin="0,2,0,8" />
 
-                    <!-- Inspector Header -->
-                    <Border Grid.Row="0" Background="{StaticResource VoidBrush}"
-                            BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
-                            Padding="12,8">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Path Width="14" Height="14" Fill="{StaticResource GoldBrush}" Data="{StaticResource IconTerminal}" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <TextBlock Text="TERMINAL INSPECTOR" Style="{StaticResource CapsLabel}" FontSize="11" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <Button Content="✕" Style="{StaticResource SmallActionButton}" Width="24" Height="24" HorizontalAlignment="Right" Click="CloseInspector_Click" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Inspector Tab Control -->
-                    <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="0,2,0,0">
-                        <!-- TAB 1: GENERAL & TELEMETRY -->
-                        <TabItem Header="General" Style="{StaticResource InspectorTabItem}">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8,4">
-                                <StackPanel>
-                                    <!-- Workstation Header -->
-                                    <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="10" CornerRadius="4">
+                                    <Border Background="{StaticResource RaisedBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                         <StackPanel>
-                                            <Grid>
-                                                <TextBlock x:Name="InspectorName" Text="NO SELECTION" Style="{StaticResource DisplayHeading}" FontSize="16" Foreground="{StaticResource GoldBrush}" />
-                                                <TextBlock x:Name="InspectorStatus" Text="READY" Style="{StaticResource CapsLabel}" FontSize="9.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="ZONE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorZone" Text="—" Style="{StaticResource BodyText}" FontWeight="SemiBold" HorizontalAlignment="Right" />
                                             </Grid>
-                                            <TextBlock x:Name="InspectorZone" Text="Zone: Main Gaming Floor" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,3,0,0" />
-                                            <TextBlock x:Name="InspectorTelemetry" Text="CPU: 32°C · RAM: 24% · DISK: 240GB" Style="{StaticResource MonoData}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,4,0,0" />
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="STATUS" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorStatus" Text="IDLE / AVAILABLE" Style="{StaticResource MonoData}" Foreground="{StaticResource RunBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="USER / MEMBER" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorUser" Text="Walk-in Guest" Style="{StaticResource BodyText}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="TARIFF PLAN" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorTariff" Text="Standard Hourly" Style="{StaticResource BodyText}" HorizontalAlignment="Right" />
+                                            </Grid>
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Active Session Summary -->
-                                    <Border Margin="0,10,0,0" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="10" CornerRadius="4">
+                                    <!-- Session Timing & Charge -->
+                                    <Border Background="{StaticResource RaisedBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                         <StackPanel>
-                                            <TextBlock Text="ACTIVE SESSION" Style="{StaticResource CapsLabel}" FontSize="9" Foreground="{StaticResource GhostBrush}" />
-                                            <TextBlock x:Name="InspectorSession" Margin="0,4,0,0" Style="{StaticResource BodyText}" FontSize="12" TextWrapping="Wrap" />
-                                            <TextBlock x:Name="InspectorCharge" Text="Current: $0.00" Style="{StaticResource MonoData}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" Margin="0,4,0,0" />
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="TIME REMAINING" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorTimeRem" Text="--:--:--" Style="{StaticResource MonoData}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="TIME ELAPSED" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorTimeElapsed" Text="--:--:--" Style="{StaticResource MonoData}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="CURRENT CHARGE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorCurrentCost" Text="$0.00" Style="{StaticResource MonoData}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Fast Session Controls -->
-                                    <StackPanel Margin="0,10,0,0">
-                                        <TextBlock Text="QUICK ACTIONS" Style="{StaticResource CapsLabel}" FontSize="9" Foreground="{StaticResource GhostBrush}" Margin="0,0,0,4" />
-                                        <Button Content="Start Walk-up (F2)" Style="{StaticResource GoldButton}" HorizontalAlignment="Stretch" Click="StartPostpaid_Click" />
-                                        <Grid Margin="0,4,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Button Content="30m Prepaid" Style="{StaticResource GhostButton}" Click="StartPrepaid30_Click" />
-                                            <Button Grid.Column="2" Content="60m Prepaid" Style="{StaticResource GhostButton}" Click="StartPrepaid60_Click" />
-                                        </Grid>
-                                        <Grid Margin="0,4,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Button Content="120m Prepaid" Style="{StaticResource GhostButton}" Click="StartPrepaid120_Click" />
-                                            <Button x:Name="RedeemCodeButton" Grid.Column="2" Content="Redeem Code…" Style="{StaticResource GhostButton}" Click="RedeemCode_Click" />
-                                        </Grid>
-                                        <Grid Margin="0,4,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="MemberQueryInput" Style="{StaticResource AppTextBox}" FontSize="11" VerticalContentAlignment="Center" />
-                                            <Button Grid.Column="1" Content="Member" Style="{StaticResource GhostButton}" Margin="4,0,0,0" Click="MemberStart_Click" />
-                                        </Grid>
+                                    <!-- Hardware Telemetry -->
+                                    <Border Background="{StaticResource RaisedBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="HARDWARE TELEMETRY" Style="{StaticResource CapsLabel}" FontSize="9" Margin="0,0,0,6" />
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="IP ADDRESS" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorIp" Text="192.168.1.101" Style="{StaticResource MonoData}" FontSize="10" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="MAC ADDRESS" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorMac" Text="00:1A:2B:3C:4D:5E" Style="{StaticResource MonoData}" FontSize="9.5" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="AGENT VERSION" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="InspectorAgentVer" Text="v1.0.0" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource RunBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <Grid Margin="0,8,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Button x:Name="PauseResumeButton" Content="Pause (F3)" Style="{StaticResource GhostButton}" Click="PauseResume_Click" />
-                                            <Button x:Name="EndSessionButton" Grid.Column="2" Content="End (F4)" Style="{StaticResource GoldButton}" Click="EndSession_Click" />
-                                        </Grid>
-                                        <Button x:Name="SwitchStationButton" Content="Switch Station…" Style="{StaticResource GhostButton}" Margin="0,4,0,0" Click="SwitchStation_Click" />
-                                    </StackPanel>
-
-                                    <!-- Hardware & Anti-Theft Baseline -->
-                                    <StackPanel Margin="0,10,0,0">
-                                        <TextBlock Text="HARDWARE &amp; INTEGRITY" Style="{StaticResource CapsLabel}" FontSize="9" Foreground="{StaticResource GhostBrush}" Margin="0,0,0,4" />
-                                        <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="8" CornerRadius="4">
-                                            <StackPanel>
-                                                <TextBlock x:Name="InspectorHwCpuGpu" Text="CPU/GPU: Scanning..." Style="{StaticResource MonoData}" FontSize="9.5" TextWrapping="Wrap" />
-                                                <TextBlock x:Name="InspectorHwRamDisk" Text="RAM/Disk: Scanning..." Style="{StaticResource MonoData}" FontSize="9.5" TextWrapping="Wrap" Margin="0,2,0,0" />
-                                                <TextBlock x:Name="InspectorHwDisplay" Text="Display: 240Hz Gaming" Style="{StaticResource MonoData}" FontSize="9.5" Foreground="{StaticResource GoldBrush}" Margin="0,2,0,0" />
-                                                <TextBlock x:Name="InspectorHwPeripherals" Text="USB Whitelist: Active" Style="{StaticResource MonoData}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,2,0,0" />
-                                            </StackPanel>
-                                        </Border>
-                                        <Grid Margin="0,4,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Button Content="Set Baseline" Style="{StaticResource GhostButton}" FontSize="10" Click="SetHardwareBaseline_Click" />
-                                            <Button Grid.Column="2" Content="Force 240Hz" Style="{StaticResource GhostButton}" FontSize="10" Click="EnforceRefreshRate_Click" />
-                                        </Grid>
-                                    </StackPanel>
-
-                                    <!-- Add Snack / Drink to Session -->
-                                    <StackPanel Margin="0,10,0,10">
-                                        <TextBlock Text="ADD SNACK / DRINK (F6)" Style="{StaticResource CapsLabel}" FontSize="9" Foreground="{StaticResource GhostBrush}" Margin="0,0,0,4" />
-                                        <ComboBox x:Name="ProductPicker" FontSize="11" DisplayMemberPath="Name" SelectedValuePath="Id" />
-                                        <Button Content="Add to Running Session" Style="{StaticResource GhostButton}" Margin="0,4,0,0" Click="AddProduct_Click" />
-                                    </StackPanel>
+                                    <!-- Action Buttons -->
+                                    <Button Content="Add Product to Tab…" Style="{StaticResource GhostButton}" Margin="0,0,0,6" Click="InspectorAddProduct_Click" />
+                                    <Button Content="Transfer Station (F6)…" Style="{StaticResource GhostButton}" Margin="0,0,0,6" Click="InspectorTransfer_Click" />
+                                    <Button Content="Send Direct Chat Message…" Style="{StaticResource GhostButton}" Click="InspectorChat_Click" />
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
 
-                        <!-- TAB 2: ORDERS & BELONGINGS -->
-                        <TabItem Header="Orders &amp; Loans" Style="{StaticResource InspectorTabItem}">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8,4">
+                        <!-- TAB 2: ACTIVE SHIFT & RECONCILIATION -->
+                        <TabItem Header="My Shift">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10">
                                 <StackPanel>
-                                    <TextBlock Text="ATTACHED CAFE ORDERS" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,4,0,4" />
-                                    <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="8" CornerRadius="4">
-                                        <TextBlock Text="No active orders attached to this workstation." Style="{StaticResource BodyText}" FontSize="11" Foreground="{StaticResource GhostBrush}" />
-                                    </Border>
+                                    <TextBlock Text="ACTIVE SHIFT SUMMARY" Style="{StaticResource CapsLabel}" FontSize="10" Foreground="{StaticResource GhostBrush}" />
+                                    <TextBlock x:Name="ShiftCashierName" Text="ADMIN · OWNER" Style="{StaticResource DisplayHeading}" FontSize="14" Margin="0,2,0,8" />
 
-                                    <TextBlock Text="HARDWARE LOANS HELD" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,12,0,4" />
-                                    <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="8" CornerRadius="4">
-                                        <TextBlock Text="No peripherals currently loaned to this seat." Style="{StaticResource BodyText}" FontSize="11" Foreground="{StaticResource GhostBrush}" />
-                                    </Border>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </TabItem>
-
-                        <!-- TAB 3: ACTIVITY HISTORY -->
-                        <TabItem Header="Audit Logs" Style="{StaticResource InspectorTabItem}">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8,4">
-                                <StackPanel>
-                                    <TextBlock Text="RECENT WORKSTATION EVENTS" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource GhostBrush}" Margin="0,4,0,4" />
-                                    <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" Padding="8" CornerRadius="4">
+                                    <Border Background="{StaticResource RaisedBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                         <StackPanel>
-                                            <TextBlock Text="• Session started (Alex)" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource RunBrush}" />
-                                            <TextBlock Text="• USB Headset connected" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" Margin="0,3,0,0" />
-                                            <TextBlock Text="• Display locked" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" Margin="0,3,0,0" />
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="OPENED AT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="ShiftOpenedTime" Text="Today, 08:00" Style="{StaticResource MonoData}" FontSize="10" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="OPENING FLOAT" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="ShiftOpeningFloat" Text="$50.00" Style="{StaticResource MonoData}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="SESSION REVENUE" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="ShiftSessionRev" Text="$128.50" Style="{StaticResource MonoData}" Foreground="{StaticResource RunBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="POS RETAIL SALES" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="ShiftPosRev" Text="$44.00" Style="{StaticResource MonoData}" Foreground="{StaticResource RunBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,2">
+                                                <TextBlock Text="EXPECTED DRAWER" Style="{StaticResource CapsLabel}" FontSize="9" />
+                                                <TextBlock x:Name="ShiftExpectedTotal" Text="$222.50" Style="{StaticResource MonoData}" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Right" />
+                                            </Grid>
                                         </StackPanel>
                                     </Border>
+
+                                    <Button Content="Reconcile &amp; End Shift (Z-Report)" Style="{StaticResource GoldButton}" Margin="0,4,0,6" Click="CloseShift_Click" />
+                                    <Button Content="Print X-Report (Interim)" Style="{StaticResource GhostButton}" Click="PrintXReport_Click" />
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
@@ -532,12 +512,170 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 2. DESK & SHIFTS VIEW                                             -->
+                <!-- 2. STATION FLEET CMS VIEW (ADMIN ONLY)                            -->
+                <!-- ================================================================= -->
+                <Grid x:Name="FleetView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <StackPanel>
+                            <TextBlock Text="Station Fleet &amp; Hardware Management CMS" Style="{StaticResource DisplayHeading}" />
+                            <TextBlock Text="Full CRUD control over terminals, hardware profiles, IP/MAC bindings, and remote power commands." Style="{StaticResource BodyText}" Foreground="{StaticResource GhostBrush}" FontSize="11" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="+ Add Station" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="FleetAddStation_Click" />
+                            <Button Content="⚡ Wake Selected" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="FleetWake_Click" />
+                            <Button Content="🔄 Reboot Selected" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="FleetReboot_Click" />
+                            <Button Content="🎯 Force 240Hz" Style="{StaticResource GhostButton}" Click="FleetForce240_Click" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0,16,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FleetSearchBox" Style="{StaticResource AppTextBox}" TextChanged="FleetSearch_TextChanged" />
+                        <ComboBox x:Name="FleetZoneFilter" Grid.Column="1" Margin="8,0,0,0" SelectionChanged="FleetZoneFilter_SelectionChanged" />
+                        <Button Grid.Column="3" Content="Delete Station…" Style="{StaticResource DangerButton}" Click="FleetDelete_Click" />
+                    </Grid>
+
+                    <DataGrid x:Name="FleetDataGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                              Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                              BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                              AlternatingRowBackground="{StaticResource RaisedBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Station Name" Binding="{Binding Name}" Width="130" FontWeight="Bold" />
+                            <DataGridTextColumn Header="Zone" Binding="{Binding ZoneName}" Width="110" />
+                            <DataGridTextColumn Header="Type" Binding="{Binding TerminalType}" Width="90" />
+                            <DataGridTextColumn Header="IP Address" Binding="{Binding IpAddress}" Width="130" />
+                            <DataGridTextColumn Header="MAC Address" Binding="{Binding MacAddress}" Width="150" />
+                            <DataGridTextColumn Header="Refresh (Hz)" Binding="{Binding NativeRefreshRateHz}" Width="100" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110" />
+                            <DataGridTextColumn Header="Agent" Binding="{Binding AgentVersion}" Width="100" />
+                            <DataGridTemplateColumn Header="Action" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Edit" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Margin="0,0,4,0" Click="FleetEditStation_Click" />
+                                            <Button Content="Lock" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Margin="0,0,4,0" Click="FleetLockSingle_Click" />
+                                            <Button Content="WoL" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Click="FleetWolSingle_Click" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <!-- ================================================================= -->
+                <!-- 3. TARIFFS & PRICING CMS VIEW (ADMIN ONLY)                        -->
+                <!-- ================================================================= -->
+                <Grid x:Name="TariffsView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <StackPanel>
+                            <TextBlock Text="Tariffs &amp; Hourly Pricing CMS" Style="{StaticResource DisplayHeading}" />
+                            <TextBlock Text="Configure pricing plans, dynamic peak hours, weekend rates, and minimum increments." Style="{StaticResource BodyText}" Foreground="{StaticResource GhostBrush}" FontSize="11" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="+ Add Tariff" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="TariffAdd_Click" />
+                            <Button Content="Delete Tariff" Style="{StaticResource DangerButton}" Click="TariffDelete_Click" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0,16,0,12">
+                        <TextBlock Text="ALL CONFIGURED BILLING TARIFFS" Style="{StaticResource CapsLabel}" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <DataGrid x:Name="TariffsAdminGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                              Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                              BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                              AlternatingRowBackground="{StaticResource RaisedBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tariff Name" Binding="{Binding Name}" Width="160" FontWeight="Bold" />
+                            <DataGridTextColumn Header="Pricing Model" Binding="{Binding Model}" Width="120" />
+                            <DataGridTextColumn Header="Base Rate ($/hr)" Binding="{Binding BaseRatePerHour, StringFormat={}{0:C}}" Width="120" />
+                            <DataGridTextColumn Header="Min Charge" Binding="{Binding MinimumCharge, StringFormat={}{0:C}}" Width="100" />
+                            <DataGridTextColumn Header="Rounding (Min)" Binding="{Binding RoundingMinutes}" Width="110" />
+                            <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="80" />
+                            <DataGridTextColumn Header="Schedule Rules" Binding="{Binding RulesCount, StringFormat={}{0} active rules}" Width="140" />
+                            <DataGridTemplateColumn Header="Action" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Edit Rates &amp; Rules…" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Click="TariffEdit_Click" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <!-- ================================================================= -->
+                <!-- 4. STAFF & SHIFTS CMS VIEW (ADMIN ONLY)                           -->
+                <!-- ================================================================= -->
+                <Grid x:Name="StaffView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <StackPanel>
+                            <TextBlock Text="Staff Accounts &amp; Access Control CMS" Style="{StaticResource DisplayHeading}" />
+                            <TextBlock Text="Create employee logins, assign Manager/Staff roles, reset PINs, and audit cash drawer shifts." Style="{StaticResource BodyText}" Foreground="{StaticResource GhostBrush}" FontSize="11" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="+ Add Staff Member" Style="{StaticResource GoldButton}" Click="StaffAdd_Click" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0,16,0,12">
+                        <TextBlock Text="REGISTERED SYSTEM CASHIERS &amp; ADMINISTRATORS" Style="{StaticResource CapsLabel}" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <DataGrid x:Name="StaffAdminGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False"
+                              Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
+                              BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
+                              AlternatingRowBackground="{StaticResource RaisedBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Username" Binding="{Binding Name}" Width="160" FontWeight="Bold" />
+                            <DataGridTextColumn Header="System Role" Binding="{Binding Role}" Width="140" />
+                            <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="80" />
+                            <DataGridTextColumn Header="Created Date" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="160" />
+                            <DataGridTemplateColumn Header="Action" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Change Role / PIN" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Margin="0,0,6,0" Click="StaffEdit_Click" />
+                                            <Button Content="Toggle Active" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Click="StaffToggleActive_Click" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <!-- ================================================================= -->
+                <!-- 5. DESK & SHIFTS VIEW                                             -->
                 <!-- ================================================================= -->
                 <Grid x:Name="DeskView" Grid.Row="0" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="32,24">
-                            <TextBlock Text="Desk &amp; Shift Management" Style="{StaticResource DisplayHeading}" />
+                            <TextBlock Text="Desk &amp; Shift Operations" Style="{StaticResource DisplayHeading}" />
                             <TextBlock x:Name="ShiftStatusText" Margin="0,6,0,0" Style="{StaticResource MonoData}"
                                        FontSize="12" Text="NO SHIFT OPEN" />
                             <Grid Margin="0,14,0,0">
@@ -635,7 +773,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 3. POS & SALES VIEW                                               -->
+                <!-- 6. POS & CAFETERIA SALES VIEW                                     -->
                 <!-- ================================================================= -->
                 <Grid x:Name="SalesView" Grid.Row="0" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
@@ -670,7 +808,7 @@
                                         <DataTemplate>
                                             <Border Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource LineBrush}"
                                                     BorderThickness="1" Width="170" Height="100" Margin="0,0,10,10" Padding="10"
-                                                    CornerRadius="3" Cursor="Hand" MouseLeftButtonUp="PosProductTile_Click">
+                                                    CornerRadius="4" Cursor="Hand" MouseLeftButtonUp="PosProductTile_Click">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*" />
@@ -769,7 +907,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 4. VOUCHERS / TICKETS VIEW                                        -->
+                <!-- 7. VOUCHERS / TICKETS VIEW (ADMIN)                                -->
                 <!-- ================================================================= -->
                 <Grid x:Name="TicketsView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -779,7 +917,7 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                        <TextBlock Text="Vouchers &amp; Ticket Codes" Style="{StaticResource DisplayHeading}" />
+                        <TextBlock Text="Vouchers &amp; Ticket Codes CMS" Style="{StaticResource DisplayHeading}" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Sell Single Voucher…" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="SellTicket_Click" />
                             <Button Content="Batch Generate…" Style="{StaticResource GhostButton}" Click="BatchGenerateTickets_Click" />
@@ -797,7 +935,7 @@
                               BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
                               AlternatingRowBackground="{StaticResource RaisedBrush}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="150" />
+                            <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="150" FontWeight="Bold" />
                             <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="90" />
                             <DataGridTextColumn Header="Minutes" Binding="{Binding DurationMinutes}" Width="75" />
                             <DataGridTextColumn Header="Credit" Binding="{Binding CreditAmount, StringFormat={}{0:C}}" Width="80" />
@@ -811,7 +949,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 5. MEMBERS CLUB VIEW                                              -->
+                <!-- 8. MEMBERS CLUB VIEW (ADMIN)                                      -->
                 <!-- ================================================================= -->
                 <Grid x:Name="MembersView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -821,8 +959,8 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                        <TextBlock Text="Members Club Management" Style="{StaticResource DisplayHeading}" />
-                        <Button Content="New Member…" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Click="AddMember_Click" />
+                        <TextBlock Text="Members Club Management CMS" Style="{StaticResource DisplayHeading}" />
+                        <Button Content="+ New Member…" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Click="AddMember_Click" />
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="0,16,0,12">
@@ -842,7 +980,7 @@
                               BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
                               AlternatingRowBackground="{StaticResource RaisedBrush}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Code / ID" Binding="{Binding Code}" Width="100" />
+                            <DataGridTextColumn Header="Code / ID" Binding="{Binding Code}" Width="100" FontWeight="Bold" />
                             <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" />
                             <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="120" />
                             <DataGridTextColumn Header="Tier" Binding="{Binding Tier}" Width="80" />
@@ -856,7 +994,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 6. INVENTORY & STOCK VIEW                                         -->
+                <!-- 9. INVENTORY & STOCK VIEW (ADMIN)                                 -->
                 <!-- ================================================================= -->
                 <Grid x:Name="InventoryView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -865,7 +1003,10 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Inventory &amp; Stock Levels" Style="{StaticResource DisplayHeading}" />
+                    <Grid Grid.Row="0">
+                        <TextBlock Text="Café Inventory &amp; Stock Levels CMS" Style="{StaticResource DisplayHeading}" />
+                        <Button Content="+ Add Product" Style="{StaticResource GoldButton}" HorizontalAlignment="Right" Click="AddProduct_Click" />
+                    </Grid>
 
                     <Grid Grid.Row="1" Margin="0,16,0,12">
                         <Grid.ColumnDefinitions>
@@ -884,19 +1025,26 @@
                               BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
                               AlternatingRowBackground="{StaticResource RaisedBrush}">
                         <DataGrid.Columns>
+                            <DataGridTextColumn Header="SKU / Barcode" Binding="{Binding Sku}" Width="120" FontWeight="Bold" />
                             <DataGridTextColumn Header="Product Name" Binding="{Binding Name}" Width="200" />
                             <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120" />
-                            <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat={}{0:C}}" Width="90" />
-                            <DataGridTextColumn Header="Stock Qty" Binding="{Binding StockQuantity}" Width="90" />
-                            <DataGridTextColumn Header="Track Stock" Binding="{Binding TrackStock}" Width="90" />
-                            <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130" />
-                            <DataGridTextColumn Header="Active" Binding="{Binding IsActive}" Width="*" />
+                            <DataGridTextColumn Header="Retail Price" Binding="{Binding Price, StringFormat={}{0:C}}" Width="100" />
+                            <DataGridTextColumn Header="Stock Qty" Binding="{Binding StockQty}" Width="90" />
+                            <DataGridTextColumn Header="Low Threshold" Binding="{Binding LowStockThreshold}" Width="110" />
+                            <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="70" />
+                            <DataGridTemplateColumn Header="Action" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Edit" Tag="{Binding Id}" Style="{StaticResource GhostButton}" Padding="8,2" FontSize="10" Click="ProductEdit_Click" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 7. PRINT & PERIPHERALS VIEW                                       -->
+                <!-- 10. PRINT & PERIPHERALS VIEW                                      -->
                 <!-- ================================================================= -->
                 <Grid x:Name="PeripheralsView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -933,7 +1081,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 8. REPORTS & AUDIT VIEW                                           -->
+                <!-- 11. REPORTS & AUDIT VIEW                                          -->
                 <!-- ================================================================= -->
                 <Grid x:Name="ReportsView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -943,7 +1091,7 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                        <TextBlock Text="Reports &amp; Tamper-Evident Audit" Style="{StaticResource DisplayHeading}" />
+                        <TextBlock Text="Reports &amp; Tamper-Evident Audit Ledger" Style="{StaticResource DisplayHeading}" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Verify SHA-256 Ledger" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="VerifyAuditChain_Click" />
                             <Button Content="Export Sessions CSV…" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Click="ExportSessionsCsv_Click" />
@@ -990,7 +1138,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 9. ALERTS CENTER VIEW                                             -->
+                <!-- 12. ALERTS CENTER VIEW                                            -->
                 <!-- ================================================================= -->
                 <Grid x:Name="AlertsView" Grid.Row="0" Visibility="Collapsed" Margin="32,24">
                     <Grid.RowDefinitions>
@@ -1021,7 +1169,7 @@
                 </Grid>
 
                 <!-- ================================================================= -->
-                <!-- 10. SETTINGS & TARIFFS VIEW                                       -->
+                <!-- 13. SETTINGS & MASTER CONFIG VIEW (ADMIN ONLY)                    -->
                 <!-- ================================================================= -->
                 <Grid x:Name="SettingsView" Grid.Row="0" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -1381,106 +1529,12 @@
                                             <TextBox x:Name="CfgBandwidthLimit" Text="50" Style="{StaticResource AppTextBox}" FontSize="11" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Grid>
-                                    <Grid Margin="0,6,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="8" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="8" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="MQTT BROKER" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                            <TextBox x:Name="CfgMqttHost" Text="tcp://localhost" Style="{StaticResource AppTextBox}" FontSize="11" Margin="0,2,0,0" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Text="MQTT PORT" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                            <TextBox x:Name="CfgMqttPort" Text="1883" Style="{StaticResource AppTextBox}" FontSize="11" Margin="0,2,0,0" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="4">
-                                            <TextBlock Text="MQTT USERNAME" Style="{StaticResource CapsLabel}" FontSize="9" />
-                                            <TextBox x:Name="CfgMqttUser" Text="zixcafe" Style="{StaticResource AppTextBox}" FontSize="11" Margin="0,2,0,0" />
-                                        </StackPanel>
-                                    </Grid>
                                     <Button Content="Reset Category Defaults" Tag="network" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Margin="0,8,0,0" Click="ResetCategoryConfig_Click" />
                                 </StackPanel>
                             </GroupBox>
 
-                            <!-- Group 7: Cashiers & Access Control -->
-                            <GroupBox Header="7. CASHIERS &amp; ACCESS CONTROL" Margin="0,16,0,0">
-                                <StackPanel>
-                                    <DataGrid x:Name="CashiersGrid" AutoGenerateColumns="False" CanUserAddRows="False"
-                                              Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
-                                              BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
-                                              AlternatingRowBackground="{StaticResource RaisedBrush}" MaxHeight="180">
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="140" />
-                                            <DataGridTextColumn Header="Display Name" Binding="{Binding Name}" Width="160" />
-                                            <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="100" />
-                                            <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="70" />
-                                            <DataGridTextColumn Header="Last Login" Binding="{Binding LastLoginAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="*" />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                    <Grid Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="100" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="90" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="NewCashierUsername" Style="{StaticResource AppTextBox}" MaxLength="60" FontSize="11" />
-                                        <TextBox x:Name="NewCashierName" Grid.Column="2" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="11" />
-                                        <PasswordBox x:Name="NewCashierPin" Grid.Column="4" MaxLength="8" FontSize="11" />
-                                        <ComboBox x:Name="NewCashierRole" Grid.Column="6" FontSize="11" />
-                                        <Button Grid.Column="8" Content="Create Cashier" Style="{StaticResource GhostButton}" Click="AddCashier_Click" />
-                                    </Grid>
-                                </StackPanel>
-                            </GroupBox>
-
-                            <!-- Group 8: Tariffs Matrix -->
-                            <GroupBox Header="8. HOURLY TARIFFS &amp; PRICING RULES" Margin="0,16,0,0">
-                                <StackPanel>
-                                    <DataGrid x:Name="TariffsGrid" AutoGenerateColumns="False" CanUserAddRows="False"
-                                              Background="{StaticResource PanelBrush}" Foreground="{StaticResource InkBrush}"
-                                              BorderBrush="{StaticResource LineBrush}" RowBackground="{StaticResource PanelBrush}"
-                                              AlternatingRowBackground="{StaticResource RaisedBrush}" MaxHeight="160">
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Tariff Name" Binding="{Binding Name}" Width="160" />
-                                            <DataGridTextColumn Header="Base Rate / Hr" Binding="{Binding BaseRatePerHour, StringFormat={}{0:C}}" Width="110" />
-                                            <DataGridTextColumn Header="Min Minutes" Binding="{Binding MinDurationMinutes}" Width="90" />
-                                            <DataGridTextColumn Header="Rounding (Min)" Binding="{Binding RoundingMinutes}" Width="100" />
-                                            <DataGridCheckBoxColumn Header="Default" Binding="{Binding IsDefault}" Width="70" />
-                                            <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="*" />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                    <Grid Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="90" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="6" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox x:Name="NewTariffName" Style="{StaticResource AppTextBox}" MaxLength="120" FontSize="11" />
-                                        <TextBox x:Name="NewTariffRate" Grid.Column="2" Style="{StaticResource AppTextBox}" Text="5.00" FontSize="11" />
-                                        <TextBox x:Name="NewTariffMinMin" Grid.Column="4" Style="{StaticResource AppTextBox}" Text="15" FontSize="11" />
-                                        <TextBox x:Name="NewTariffRounding" Grid.Column="6" Style="{StaticResource AppTextBox}" Text="5" FontSize="11" />
-                                        <Button Grid.Column="8" Content="Save Tariff" Style="{StaticResource GhostButton}" Click="AddTariff_Click" />
-                                    </Grid>
-                                </StackPanel>
-                            </GroupBox>
-
-                            <!-- Group 9: Database Backups & Recovery -->
-                            <GroupBox Header="9. DATABASE SNAPSHOTS &amp; RECOVERY" Margin="0,16,0,32">
+                            <!-- Group 7: Database Backups & Recovery -->
+                            <GroupBox Header="7. DATABASE SNAPSHOTS &amp; RECOVERY" Margin="0,16,0,32">
                                 <StackPanel>
                                     <TextBlock x:Name="DatabaseInfoText" Text="Database: SQLite · Status: Connected" Style="{StaticResource MonoData}" FontSize="11" Foreground="{StaticResource GhostBrush}" />
                                     <TextBlock x:Name="BackupStatusText" Text="Ready for snapshot." Style="{StaticResource MonoData}" FontSize="10.5" Foreground="{StaticResource GoldBrush}" Margin="0,4,0,0" />
@@ -1590,6 +1644,9 @@
                     <!-- Cashier -->
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="16" />
+                    <!-- Role Badge -->
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
                     <!-- Counts -->
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="16" />
@@ -1605,25 +1662,30 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="CashierText" Grid.Column="0" Text="CASHIER: ADMIN · OWNER" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+                <TextBlock x:Name="CashierText" Grid.Column="0" Text="CASHIER: ADMIN" Style="{StaticResource CapsLabel}" FontSize="9.5" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
 
-                <TextBlock x:Name="TotalTerminalsText" Grid.Column="2" Text="TOTAL: 35" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
+                <!-- Role Badge (RBAC Dynamic Indication) -->
+                <Border Grid.Column="2" Background="{StaticResource VoidBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                    <TextBlock x:Name="RoleBadge" Text="ADMINISTRATOR (FULL CONTROL)" Style="{StaticResource MonoData}" FontSize="9" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" VerticalAlignment="Center" />
+                </Border>
 
-                <TextBlock x:Name="InUseCountText" Grid.Column="4" Text="IN USE: 0" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource RunBrush}" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock x:Name="TotalTerminalsText" Grid.Column="4" Text="TOTAL: 35" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
 
-                <TextBlock x:Name="IdleCountText" Grid.Column="6" Text="IDLE: 35" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
+                <TextBlock x:Name="InUseCountText" Grid.Column="6" Text="IN USE: 0" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource RunBrush}" FontWeight="Bold" VerticalAlignment="Center" />
+
+                <TextBlock x:Name="IdleCountText" Grid.Column="8" Text="IDLE: 35" Style="{StaticResource MonoData}" FontSize="10" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
 
                 <!-- Occupancy Ratio Progress Meter -->
-                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="10" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="OCCUPANCY:" Style="{StaticResource CapsLabel}" FontSize="9" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <ProgressBar x:Name="OccupancyProgressBar" Width="100" Height="8" Value="0" Maximum="100" VerticalAlignment="Center" />
                     <TextBlock x:Name="OccupancyRatioText" Text="0%" Style="{StaticResource MonoData}" FontSize="9.5" Foreground="{StaticResource GoldBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                 </StackPanel>
 
                 <!-- Server Port & Version -->
-                <StackPanel Grid.Column="10" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="12" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="HealthText" Text="SERVER · PORT 40000 · ONLINE" Style="{StaticResource MonoData}" FontSize="9.5" Foreground="{StaticResource RunBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <TextBlock Text="v1.0.0 COMMERCIAL" Style="{StaticResource MonoData}" FontSize="9" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="v1.0.0 ENTERPRISE" Style="{StaticResource MonoData}" FontSize="9" Foreground="{StaticResource GhostBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>

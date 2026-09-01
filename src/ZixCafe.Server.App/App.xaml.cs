@@ -76,8 +76,23 @@ public partial class App : Application
             {
                 var dbFactory = Services.GetRequiredService<IDbContextFactory<ZixCafeDbContext>>();
                 await using var db = await dbFactory.CreateDbContextAsync();
-                var admin = await db.Cashiers.FirstAsync(c => c.Name == "admin");
-                var captureWindow = new MainWindow(admin);
+
+                var roleArg = e.Args.FirstOrDefault(a => a.StartsWith("--test-role="));
+                var isEmployee = roleArg is not null && roleArg["--test-role=".Length..].Equals("employee", StringComparison.OrdinalIgnoreCase);
+
+                Domain.Entities.Cashier targetCashier;
+                if (isEmployee)
+                {
+                    targetCashier = await db.Cashiers.FirstOrDefaultAsync(c => c.Role == Domain.Enums.CashierRole.Staff)
+                        ?? new Domain.Entities.Cashier { Name = "operator_alex", Role = Domain.Enums.CashierRole.Staff, IsActive = true };
+                }
+                else
+                {
+                    targetCashier = await db.Cashiers.FirstOrDefaultAsync(c => c.Role == Domain.Enums.CashierRole.Owner || c.Role == Domain.Enums.CashierRole.Manager)
+                        ?? await db.Cashiers.FirstAsync(c => c.Name == "admin");
+                }
+
+                var captureWindow = new MainWindow(targetCashier);
                 MainWindow = captureWindow;
                 captureWindow.Width = 1440;
                 captureWindow.Height = 900;
@@ -92,6 +107,18 @@ public partial class App : Application
                     var viewName = viewArg["--test-view=".Length..].ToLowerInvariant();
                     switch (viewName)
                     {
+                        case "rack":
+                            captureWindow.NavRack.IsChecked = true;
+                            break;
+                        case "fleet":
+                            if (captureWindow.NavFleet.Visibility == Visibility.Visible) captureWindow.NavFleet.IsChecked = true;
+                            break;
+                        case "tariffs":
+                            if (captureWindow.NavTariffs.Visibility == Visibility.Visible) captureWindow.NavTariffs.IsChecked = true;
+                            break;
+                        case "staff":
+                            if (captureWindow.NavStaff.Visibility == Visibility.Visible) captureWindow.NavStaff.IsChecked = true;
+                            break;
                         case "desk":
                             captureWindow.NavDesk.IsChecked = true;
                             break;
@@ -99,22 +126,22 @@ public partial class App : Application
                             captureWindow.NavSales.IsChecked = true;
                             break;
                         case "tickets" or "vouchers":
-                            captureWindow.NavTickets.IsChecked = true;
+                            if (captureWindow.NavTickets.Visibility == Visibility.Visible) captureWindow.NavTickets.IsChecked = true;
                             break;
                         case "members":
-                            captureWindow.NavMembers.IsChecked = true;
+                            if (captureWindow.NavMembers.Visibility == Visibility.Visible) captureWindow.NavMembers.IsChecked = true;
                             break;
                         case "inventory":
-                            captureWindow.NavInventory.IsChecked = true;
+                            if (captureWindow.NavInventory.Visibility == Visibility.Visible) captureWindow.NavInventory.IsChecked = true;
                             break;
                         case "peripherals":
-                            captureWindow.NavPeripherals.IsChecked = true;
+                            if (captureWindow.NavPeripherals.Visibility == Visibility.Visible) captureWindow.NavPeripherals.IsChecked = true;
                             break;
                         case "reports":
-                            captureWindow.NavReports.IsChecked = true;
+                            if (captureWindow.NavReports.Visibility == Visibility.Visible) captureWindow.NavReports.IsChecked = true;
                             break;
                         case "alerts":
-                            captureWindow.NavAlerts.IsChecked = true;
+                            if (captureWindow.NavAlerts.Visibility == Visibility.Visible) captureWindow.NavAlerts.IsChecked = true;
                             break;
                         case "screen":
                             captureWindow.ViewScreenGrid.IsChecked = true;
@@ -123,7 +150,7 @@ public partial class App : Application
                             captureWindow.ViewTelemetryGrid.IsChecked = true;
                             break;
                         case "settings":
-                            captureWindow.NavSettings.IsChecked = true;
+                            if (captureWindow.NavSettings.Visibility == Visibility.Visible) captureWindow.NavSettings.IsChecked = true;
                             break;
                     }
                     captureWindow.UpdateLayout();
