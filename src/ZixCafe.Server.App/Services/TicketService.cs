@@ -119,7 +119,7 @@ public class TicketService
             db.Sales.Add(sale);
         }
 
-        await AppendAuditAsync(db, "ticket.sell", ticket.Id.ToString(), $"code={FormatCode(code)}, type={type}, price={request.Price}", request.CashierName);
+        await db.AppendAuditAsync("ticket.sell", "Ticket", ticket.Id.ToString(), $"code={FormatCode(code)}, type={type}, price={request.Price}", request.CashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -162,7 +162,7 @@ public class TicketService
         }
 
         db.Tickets.AddRange(tickets);
-        await AppendAuditAsync(db, "ticket.batch_generate", null, $"count={request.Count}, type={type}, batchRef={request.BatchRef}", request.CashierName);
+        await db.AppendAuditAsync("ticket.batch_generate", "Ticket", null, $"count={request.Count}, type={type}, batchRef={request.BatchRef}", request.CashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -187,7 +187,7 @@ public class TicketService
         }
 
         db.Tickets.Remove(ticket);
-        await AppendAuditAsync(db, "ticket.void", ticketId.ToString(), $"voided ticket {FormatCode(ticket.Code)} (Manager Override)", cashierName);
+        await db.AppendAuditAsync("ticket.void", "Ticket", ticketId.ToString(), $"voided ticket {FormatCode(ticket.Code)} (Manager Override)", cashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -200,25 +200,5 @@ public class TicketService
             return $"{compact[..4]}-{compact.Substring(4, 4)}-{compact.Substring(8, 4)}-{compact[12]}";
         }
         return compact;
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Ticket", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Ticket",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

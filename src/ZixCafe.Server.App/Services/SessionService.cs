@@ -250,8 +250,8 @@ public class SessionService
                 new SmartRelayCommand(session.Terminal.RelayType ?? "Shelly", session.Terminal.RelayAddress, session.Terminal.RelayChannel, false));
         }
 
-        await AppendAuditAsync(db, reason == "time_up" ? "session.auto_end" : "session.end",
-            session.Id.ToString(), $"total={total:F2} time={timeCharge:F2}", request.CashierName);
+        await db.AppendAuditAsync(reason == "time_up" ? "session.auto_end" : "session.end",
+            "Session", session.Id.ToString(), $"total={total:F2} time={timeCharge:F2}", request.CashierName);
 
         await db.SaveChangesAsync();
         await tx.CommitAsync();
@@ -338,7 +338,8 @@ public class SessionService
         }
 
         // Audit Trail entry
-        await AppendAuditAsync(db, "session.switch_station",
+        await db.AppendAuditAsync("session.switch_station",
+            "Session",
             sourceSession.Id.ToString(),
             $"Switched from '{sourceTerminal.Name}' to '{targetTerminal.Name}'. Reason: {request.Reason ?? "Guest request"}",
             request.CashierName);
@@ -457,7 +458,7 @@ public class SessionService
 
         session.Status = SessionStatus.Paused;
         session.PausedAtUtc = DateTime.UtcNow;
-        await AppendAuditAsync(db, "session.pause", session.Id.ToString(),
+        await db.AppendAuditAsync("session.pause", "Session", session.Id.ToString(),
             $"terminal={terminalId}", cashierName);
         await db.SaveChangesAsync();
 
@@ -486,7 +487,7 @@ public class SessionService
         }
         session.Status = SessionStatus.Active;
         session.PausedAtUtc = null;
-        await AppendAuditAsync(db, "session.resume", session.Id.ToString(),
+        await db.AppendAuditAsync("session.resume", "Session", session.Id.ToString(),
             $"pausedMin={session.PausedMinutes}", cashierName);
         await db.SaveChangesAsync();
 
@@ -573,33 +574,13 @@ public class SessionService
             Amount = decimal.Round(product.Price * quantity, 2)
         });
 
-        await AppendAuditAsync(db, "sale.extras", session.Id.ToString(),
+        await db.AppendAuditAsync("sale.extras", "Session", session.Id.ToString(),
             $"{product.Sku} x{quantity}={decimal.Round(product.Price * quantity, 2):F2}", cashierName);
         await db.SaveChangesAsync();
         await tx.CommitAsync();
 
         await BroadcastStateAsync(session.TerminalId);
         return new AddLineResponse(true, null, session.Lines.Sum(l => l.Amount));
-    }
-
-    public LoginResponse Login(LoginRequest request)
-    {
-        using var db = _dbFactory.CreateDbContext();
-        var cashier = db.Cashiers.FirstOrDefault(c => c.Name == request.Name && c.IsActive);
-        if (cashier is null || !SecretHasher.Verify(request.Pin, cashier.PinHash))
-        {
-            return new LoginResponse(false, "Unknown cashier or wrong PIN.", string.Empty);
-        }
-        return new LoginResponse(true, null, cashier.Role.ToString());
-    }
-
-    private static async Task AppendAuditAsync(
-        ZixCafeDbContext db, string action, string targetId, string detail, string cashierName)
-    {
-        var lastAudit = await db.AuditEntries.OrderBy(a => a.CreatedAt).LastOrDefaultAsync();
-        db.AuditEntries.Add(DbInitializer.NewAudit(
-            action, "Session", targetId, detail, cashierName,
-            prevHash: lastAudit?.Hash ?? string.Empty));
     }
 
     private static SessionMode ParseMode(string mode) => mode switch

@@ -102,7 +102,7 @@ public class AuthAndCashierService
         };
         db.Cashiers.Add(cashier);
 
-        await AppendAuditAsync(db, "cashier.create", cashier.Id.ToString(), $"name={cashier.Name}, role={role}", requestingCashier);
+        await db.AppendAuditAsync("cashier.create", "Cashier", cashier.Id.ToString(), $"name={cashier.Name}, role={role}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -141,29 +141,9 @@ public class AuthAndCashierService
             cashier.PinHash = SecretHasher.Hash(request.NewPin.Trim());
         }
 
-        await AppendAuditAsync(db, "cashier.update", cashier.Id.ToString(), $"name={cashier.Name}, role={role}, active={cashier.IsActive}", requestingCashier);
+        await db.AppendAuditAsync("cashier.update", "Cashier", cashier.Id.ToString(), $"name={cashier.Name}, role={role}, active={cashier.IsActive}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Cashier", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Cashier",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

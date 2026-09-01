@@ -1,6 +1,7 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using ZixCafe.Domain.Entities;
 using ZixCafe.Domain.Services;
 using ZixCafe.Infrastructure;
@@ -16,7 +17,7 @@ public class HardwareIntegrityService
     private readonly AlertsCenterService _alertsCenter;
     private readonly VenueSettingsService _venueSettings;
     private readonly IHubContext<TerminalHub, ITerminalClient> _terminalHub;
-    private readonly Dictionary<Guid, HardwareInventoryDto> _latestReports = new();
+    private readonly ConcurrentDictionary<Guid, HardwareInventoryDto> _latestReports = new();
 
     public HardwareIntegrityService(
         IDbContextFactory<ZixCafeDbContext> dbFactory,
@@ -90,7 +91,7 @@ public class HardwareIntegrityService
         {
             var msg = $"[Hardware Watchdog] {terminal.Name}: {disc.Description}";
             await _alertsCenter.RaiseAlertAsync(disc.Severity, "hardware.theft_warning", msg, terminal.Id, "System");
-            await AppendAuditAsync(db, "security.hardware_discrepancy", terminal.Id.ToString(), JsonSerializer.Serialize(disc), "System");
+            await db.AppendAuditAsync("security.hardware_discrepancy", "Terminal", terminal.Id.ToString(), JsonSerializer.Serialize(disc), "System");
         }
 
         baseline.LastVerifiedAtUtc = DateTime.UtcNow;
@@ -210,7 +211,7 @@ public class HardwareIntegrityService
             baseline.LastVerifiedAtUtc = DateTime.UtcNow;
         }
 
-        await AppendAuditAsync(db, "hardware.set_baseline", terminalId.ToString(), $"CPU={live.CpuName};GPU={live.GpuName};RAM={live.TotalRamMb}", requestingCashier);
+        await db.AppendAuditAsync("hardware.set_baseline", "Terminal", terminalId.ToString(), $"CPU={live.CpuName};GPU={live.GpuName};RAM={live.TotalRamMb}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -232,25 +233,5 @@ public class HardwareIntegrityService
 
         await _terminalHub.Clients.Group($"terminal_{terminalId}").CoordinateDisklessWipe(provider, true);
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Terminal", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Terminal",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

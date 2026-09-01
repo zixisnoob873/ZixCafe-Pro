@@ -133,7 +133,7 @@ public class SalesAndPosService
 
         db.Sales.Add(sale);
 
-        await AppendAuditAsync(db, "sale.create", sale.Id.ToString(),
+        await db.AppendAuditAsync("sale.create", "Sale", sale.Id.ToString(),
             $"total={total:0.00}, tender={totalTendered:0.00}, cash={request.PaidCash:0.00}, card={request.PaidCard:0.00}, qr={request.PaidQr:0.00}",
             request.CashierName);
 
@@ -254,25 +254,5 @@ public class SalesAndPosService
         sb.AppendLine("========================================");
 
         return sb.ToString();
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Sale", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Sale",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

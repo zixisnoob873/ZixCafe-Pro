@@ -56,12 +56,13 @@ public class EnergyAndIoTHostService : BackgroundService
 
         if (success)
         {
-            await AppendAuditAsync(
-                db,
+            await db.AppendAuditAsync(
                 "energy.wol_wake",
+                "EnergyIoT",
                 terminal.Id.ToString(),
                 $"Sent Wake-on-LAN magic packet to terminal '{terminal.Name}' (MAC: {terminal.MacAddress})",
-                requestingCashier);
+                requestingCashier,
+                ct);
             await db.SaveChangesAsync(ct);
 
             return ResultResponse.Success($"Magic packet sent to {terminal.Name} ({terminal.MacAddress}).");
@@ -96,12 +97,13 @@ public class EnergyAndIoTHostService : BackgroundService
             }
         }
 
-        await AppendAuditAsync(
-            db,
+        await db.AppendAuditAsync(
             "energy.wol_wake_batch",
+            "EnergyIoT",
             zoneId?.ToString() ?? "All",
             $"Sent Wake-on-LAN magic packets to {wokenCount}/{terminals.Count} terminals (Zone: {zoneId?.ToString() ?? "All"})",
-            requestingCashier);
+            requestingCashier,
+            ct);
         await db.SaveChangesAsync(ct);
 
         return ResultResponse.Success($"Sent WoL magic packets to {wokenCount} terminals.");
@@ -124,37 +126,18 @@ public class EnergyAndIoTHostService : BackgroundService
         var cmd = new SmartRelayCommand(terminal.RelayType ?? "Shelly", terminal.RelayAddress, terminal.RelayChannel, powerOn);
         var success = await SmartRelayController.SendPowerCommandAsync(cmd);
 
-        await AppendAuditAsync(
-            db,
+        await db.AppendAuditAsync(
             "energy.smart_relay_toggle",
+            "EnergyIoT",
             terminal.Id.ToString(),
             $"Toggled smart relay power to {(powerOn ? "ON" : "OFF")} for '{terminal.Name}' ({terminal.RelayType} @ {terminal.RelayAddress})",
-            cashierName);
+            cashierName,
+            ct);
         await db.SaveChangesAsync(ct);
 
         return success
             ? ResultResponse.Success($"Power for '{terminal.Name}' set to {(powerOn ? "ON" : "OFF")}.")
             : ResultResponse.Fail($"Failed to communicate with relay device at {terminal.RelayAddress}.");
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "EnergyIoT", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "EnergyIoT",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

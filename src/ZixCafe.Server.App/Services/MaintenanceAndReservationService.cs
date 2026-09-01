@@ -47,7 +47,7 @@ public class MaintenanceAndReservationService
             terminal.MaintenanceReason = null;
         }
 
-        await AppendAuditAsync(db, "terminal.maintenance", terminal.Id.ToString(), $"inMaintenance={request.InMaintenance}, reason={request.Reason}", request.CashierName);
+        await db.AppendAuditAsync("terminal.maintenance", "Terminal", terminal.Id.ToString(), $"inMaintenance={request.InMaintenance}, reason={request.Reason}", request.CashierName);
         await db.SaveChangesAsync();
 
         await _sessions.BroadcastStateAsync(terminal.Id);
@@ -81,7 +81,7 @@ public class MaintenanceAndReservationService
         terminal.ReservedFor = request.GuestName.Trim();
         terminal.ReservedUntilUtc = request.ReservedUntilUtc;
 
-        await AppendAuditAsync(db, "terminal.reserve", terminal.Id.ToString(), $"guest={request.GuestName}, until={request.ReservedUntilUtc:u}", request.CashierName);
+        await db.AppendAuditAsync("terminal.reserve", "Terminal", terminal.Id.ToString(), $"guest={request.GuestName}, until={request.ReservedUntilUtc:u}", request.CashierName);
         await db.SaveChangesAsync();
 
         await _sessions.BroadcastStateAsync(terminal.Id);
@@ -101,30 +101,10 @@ public class MaintenanceAndReservationService
         terminal.ReservedFor = null;
         terminal.ReservedUntilUtc = null;
 
-        await AppendAuditAsync(db, "terminal.release_reservation", terminal.Id.ToString(), "reservation released", cashierName);
+        await db.AppendAuditAsync("terminal.release_reservation", "Terminal", terminal.Id.ToString(), "reservation released", cashierName);
         await db.SaveChangesAsync();
 
         await _sessions.BroadcastStateAsync(terminal.Id);
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Terminal", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Terminal",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

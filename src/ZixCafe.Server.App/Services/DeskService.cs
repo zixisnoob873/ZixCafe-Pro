@@ -60,7 +60,7 @@ public class DeskService
         };
         db.Shifts.Add(shift);
 
-        await AppendAuditAsync(db, "shift.open", shift.Id.ToString(),
+        await db.AppendAuditAsync("shift.open", "Desk", shift.Id.ToString(),
             $"float={openingFloat:F2}", cashierName);
         await db.SaveChangesAsync();
 
@@ -88,21 +88,25 @@ public class DeskService
             return new ShiftResponse(false, "No shift is open.", null);
         }
 
-        // Honest approximation until split payments exist: every charge closed
-        // during the shift is assumed to have been collected as cash at the desk.
-        // SQLite can't SUM decimal in SQL, so total the (small) list client-side.
+        // Total completed sessions and POS cash collected during the shift
         var sessionTotals = await db.Sessions
             .Where(s => s.Status == SessionStatus.Completed
                 && s.EndedAt != null
                 && s.EndedAt >= shift.StartedAt)
             .Select(s => s.Amount)
             .ToListAsync();
-        shift.ExpectedDrawer = shift.OpeningFloat + sessionTotals.Sum();
+
+        var salesCash = await db.Sales
+            .Where(s => s.CreatedAt >= shift.StartedAt)
+            .Select(s => s.PaidCash)
+            .ToListAsync();
+
+        shift.ExpectedDrawer = shift.OpeningFloat + sessionTotals.Sum() + salesCash.Sum();
         shift.CountedDrawer = countedDrawer;
         shift.ClosingNote = note;
         shift.EndedAt = DateTime.UtcNow;
 
-        await AppendAuditAsync(db, "shift.close", shift.Id.ToString(),
+        await db.AppendAuditAsync("shift.close", "Desk", shift.Id.ToString(),
             $"expected={shift.ExpectedDrawer:F2} counted={countedDrawer:F2} variance={(shift.Variance ?? 0):F2}",
             cashierName);
         await db.SaveChangesAsync();
@@ -271,7 +275,7 @@ public class DeskService
         loan.ReturnedTo = string.IsNullOrWhiteSpace(returnedTo) ? null : returnedTo.Trim();
         loan.ReturnedAt = DateTime.UtcNow;
 
-        await AppendAuditAsync(db, forfeited ? "loan.forfeit" : "loan.return", loan.Id.ToString(),
+        await db.AppendAuditAsync(forfeited ? "loan.forfeit" : "loan.return", "Desk", loan.Id.ToString(),
             $"{loan.ItemName} deposit={loan.DepositAmount:F2}", cashierName);
         await db.SaveChangesAsync();
 
@@ -307,18 +311,9 @@ public class DeskService
             await _sessions.BroadcastStateAsync(id);
         }
 
-        await AppendAuditAsync(db, "terminal.lock_all", "all",
+        await db.AppendAuditAsync("terminal.lock_all", "Desk", "all",
             $"count={idleIds.Count}", cashierName);
         await db.SaveChangesAsync();
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(
-        ZixCafeDbContext db, string action, string targetId, string detail, string cashierName)
-    {
-        var lastAudit = await db.AuditEntries.OrderBy(a => a.CreatedAt).LastOrDefaultAsync();
-        db.AuditEntries.Add(DbInitializer.NewAudit(
-            action, "Desk", targetId, detail, cashierName,
-            prevHash: lastAudit?.Hash ?? string.Empty));
     }
 }

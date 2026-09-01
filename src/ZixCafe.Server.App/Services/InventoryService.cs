@@ -85,7 +85,7 @@ public class InventoryService
         product.LowStockThreshold = Math.Max(0, request.LowStockThreshold);
         product.IsActive = request.IsActive;
 
-        await AppendAuditAsync(db, "product.save", product.Id.ToString(), $"sku={product.Sku}, name={product.Name}, price={product.Price}", requestingCashier);
+        await db.AppendAuditAsync("product.save", "Inventory", product.Id.ToString(), $"sku={product.Sku}, name={product.Name}, price={product.Price}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -135,7 +135,7 @@ public class InventoryService
                 null, request.CashierName);
         }
 
-        await AppendAuditAsync(db, "stock.adjust", product.Id.ToString(),
+        await db.AppendAuditAsync("stock.adjust", "Inventory", product.Id.ToString(),
             $"sku={product.Sku}, change={request.QuantityChange}, newStock={product.StockQty}, reason={reason}",
             request.CashierName);
 
@@ -169,25 +169,5 @@ public class InventoryService
             m.CashierName,
             m.CreatedAt
         )).ToList();
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Inventory", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Inventory",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

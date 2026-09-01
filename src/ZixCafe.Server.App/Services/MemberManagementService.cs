@@ -124,7 +124,7 @@ public class MemberManagementService
         member.Notes = request.Notes?.Trim();
         member.TierId = request.TierId;
 
-        await AppendAuditAsync(db, "member.save", member.Id.ToString(), $"code={member.Code}, name={member.Name}", requestingCashier);
+        await db.AppendAuditAsync("member.save", "Member", member.Id.ToString(), $"code={member.Code}, name={member.Name}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -252,7 +252,7 @@ public class MemberManagementService
             }
         }
 
-        await AppendAuditAsync(db, "member.topup", member.Id.ToString(), $"kind={request.Kind}, amount={request.Amount}, minutes={request.Minutes}", request.CashierName);
+        await db.AppendAuditAsync("member.topup", "Member", member.Id.ToString(), $"kind={request.Kind}, amount={request.Amount}, minutes={request.Minutes}", request.CashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -305,29 +305,9 @@ public class MemberManagementService
         }
 
         member.IsFrozen = isFrozen;
-        await AppendAuditAsync(db, "member.freeze", member.Id.ToString(), $"frozen={isFrozen}", requestingCashier);
+        await db.AppendAuditAsync("member.freeze", "Member", member.Id.ToString(), $"frozen={isFrozen}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Member", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Member",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

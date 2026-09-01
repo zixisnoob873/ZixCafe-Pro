@@ -84,12 +84,13 @@ public class MasterConfigurationService
             existing.LastUpdatedBy = string.IsNullOrWhiteSpace(cashierName) ? "Admin" : cashierName;
 
             // Cryptographic audit log entry
-            await AppendAuditAsync(
-                db,
+            await db.AppendAuditAsync(
                 "system.config_update",
+                "SystemConfig",
                 existing.Id.ToString(),
                 $"Updated system configuration: {reason}. Schema: {existing.SchemaVersion}",
-                existing.LastUpdatedBy);
+                existing.LastUpdatedBy,
+                ct);
 
             await db.SaveChangesAsync(ct);
             _cachedSettings = existing;
@@ -366,25 +367,5 @@ public class MasterConfigurationService
         s.DatabaseAutoBackupPath = dto.DatabaseAutoBackupPath ?? "backups";
         s.DatabaseAutoBackupIntervalHours = Math.Clamp(dto.DatabaseAutoBackupIntervalHours, 1, 720);
         s.DatabaseBackupRetentionCount = Math.Clamp(dto.DatabaseBackupRetentionCount, 1, 365);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "SystemConfig", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "SystemConfig",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

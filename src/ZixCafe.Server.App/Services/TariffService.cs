@@ -110,7 +110,7 @@ public class TariffService
             });
         }
 
-        await AppendAuditAsync(db, "tariff.save", tariff.Id.ToString(), $"name={tariff.Name}, rate={tariff.BaseRatePerHour}", requestingCashier);
+        await db.AppendAuditAsync("tariff.save", "Tariff", tariff.Id.ToString(), $"name={tariff.Name}, rate={tariff.BaseRatePerHour}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -133,29 +133,9 @@ public class TariffService
         }
 
         db.Tariffs.Remove(tariff);
-        await AppendAuditAsync(db, "tariff.delete", tariffId.ToString(), $"deleted {tariff.Name}", requestingCashier);
+        await db.AppendAuditAsync("tariff.delete", "Tariff", tariffId.ToString(), $"deleted {tariff.Name}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Tariff", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Tariff",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

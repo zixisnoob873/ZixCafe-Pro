@@ -84,7 +84,7 @@ public class PeripheralMeteringService
             db.Sales.Add(sale);
         }
 
-        await AppendAuditAsync(db, "print.release", job.Id.ToString(), $"printer={job.PrinterName}, pages={job.Pages}, cost={job.Amount}", cashierName);
+        await db.AppendAuditAsync("print.release", "Peripheral", job.Id.ToString(), $"printer={job.PrinterName}, pages={job.Pages}, cost={job.Amount}", cashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -101,7 +101,7 @@ public class PeripheralMeteringService
 
         job.Status = PrintStatus.Cancelled;
         job.FailureReason = reason;
-        await AppendAuditAsync(db, "print.cancel", job.Id.ToString(), $"reason={reason}", cashierName);
+        await db.AppendAuditAsync("print.cancel", "Peripheral", job.Id.ToString(), $"reason={reason}", cashierName);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -151,25 +151,5 @@ public class PeripheralMeteringService
         }
 
         await db.SaveChangesAsync();
-    }
-
-    private static async Task AppendAuditAsync(ZixCafeDbContext db, string action, string? targetId, string? detail, string cashier)
-    {
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "Peripheral", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "Peripheral",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
     }
 }

@@ -154,7 +154,7 @@ public class RemoteOpsService
         };
 
         db.ProhibitedApps.Add(app);
-        await AppendAuditAsync("prohibited_app.add", app.Id.ToString(), $"match={app.Match}", requestingCashier);
+        await db.AppendAuditAsync("prohibited_app.add", "RemoteOps", app.Id.ToString(), $"match={app.Match}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -170,7 +170,7 @@ public class RemoteOpsService
         }
 
         db.ProhibitedApps.Remove(app);
-        await AppendAuditAsync("prohibited_app.delete", id.ToString(), $"deleted {app.Match}", requestingCashier);
+        await db.AppendAuditAsync("prohibited_app.delete", "RemoteOps", id.ToString(), $"deleted {app.Match}", requestingCashier);
         await db.SaveChangesAsync();
 
         return new ResultResponse(true, null);
@@ -179,22 +179,7 @@ public class RemoteOpsService
     private async Task AppendAuditAsync(string action, string? targetId, string? detail, string cashier)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var last = await db.AuditEntries.OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync();
-        var prevHash = last?.Hash ?? string.Empty;
-        var now = DateTime.UtcNow;
-        var (_, hash) = AuditChain.Link(prevHash, action, "RemoteOps", targetId, detail, cashier, now);
-
-        db.AuditEntries.Add(new AuditEntry
-        {
-            Action = action,
-            TargetType = "RemoteOps",
-            TargetId = targetId,
-            DetailJson = detail,
-            CashierName = cashier,
-            PrevHash = prevHash,
-            Hash = hash,
-            CreatedAt = now
-        });
+        await db.AppendAuditAsync(action, "RemoteOps", targetId, detail, cashier);
         await db.SaveChangesAsync();
     }
 }
