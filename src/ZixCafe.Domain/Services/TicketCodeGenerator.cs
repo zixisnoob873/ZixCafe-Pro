@@ -39,30 +39,39 @@ public static class TicketCodeGenerator
         {
             return false;
         }
-        var body = compact[..^1];
+        var body = compact.AsSpan(0, compact.Length - 1);
         var check = compact[^1];
-        return ComputeCheckChar(body, Alphabet) == check
-            && body.All(Alphabet.Contains);
+        return ComputeCheckChar(body) == check
+            && AllAlphabet(body);
+    }
+
+    private static bool AllAlphabet(ReadOnlySpan<char> span)
+    {
+        foreach (var c in span)
+        {
+            if (!Alphabet.Contains(c)) return false;
+        }
+        return true;
     }
 
     private static string AppendCheck(char[] body, string alphabet)
     {
         var compact = new string(body).Replace("-", string.Empty);
-        return new string(body) + "-" + ComputeCheckChar(compact, alphabet);
+        return string.Concat(new string(body), "-", ComputeCheckChar(compact.AsSpan()).ToString());
     }
 
-    private static char ComputeCheckChar(string body, string alphabet)
+    private static char ComputeCheckChar(ReadOnlySpan<char> body)
     {
         var sum = 0;
         for (var i = 0; i < body.Length; i++)
         {
-            var idx = alphabet.IndexOf(body[i]);
+            var idx = Alphabet.IndexOf(body[i]);
             if (idx < 0)
             {
-                return alphabet[0];
+                return Alphabet[0];
             }
             sum = (sum * 32 + idx) % 31;
         }
-        return alphabet[sum % Alphabet.Length];
+        return Alphabet[sum % Alphabet.Length];
     }
 }

@@ -5,11 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace ZixCafe.Domain.Services;
 
-public static class WakeOnLanService
+public static partial class WakeOnLanService
 {
-    private static readonly Regex MacRegex = new(
-        @"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$|^([0-9A-Fa-f]{12})$",
-        RegexOptions.Compiled);
+    [GeneratedRegex(@"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$|^([0-9A-Fa-f]{12})$")]
+    private static partial Regex MacRegex();
 
     public static byte[] BuildMagicPacket(string macAddress)
     {
@@ -27,7 +26,7 @@ public static class WakeOnLanService
         var macBytes = new byte[6];
         for (var i = 0; i < 6; i++)
         {
-            if (!byte.TryParse(cleaned.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out macBytes[i]))
+            if (!byte.TryParse(cleaned.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out macBytes[i]))
             {
                 throw new FormatException($"Invalid hex in MAC address: '{macAddress}'");
             }
@@ -68,6 +67,6 @@ public static class WakeOnLanService
     public static bool IsValidMacAddress(string? macAddress)
     {
         if (string.IsNullOrWhiteSpace(macAddress)) return false;
-        return MacRegex.IsMatch(macAddress.Trim());
+        return MacRegex().IsMatch(macAddress.Trim());
     }
 }
