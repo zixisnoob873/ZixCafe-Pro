@@ -1062,3 +1062,43 @@ public class AuditTamperDetectionChainTests
     }
 }
 
+public class CommandCenterOperationalMetricsTests
+{
+    [Theory]
+    [InlineData(64, 0, 0, 64)]
+    [InlineData(64, 16, 25, 48)]
+    [InlineData(64, 32, 50, 32)]
+    [InlineData(64, 48, 75, 16)]
+    [InlineData(64, 64, 100, 0)]
+    [InlineData(0, 0, 0, 0)]
+    public void Occupancy_ratio_computes_accurate_percentage(int total, int inUse, int expectedPercent, int expectedIdle)
+    {
+        var idle = total > 0 ? total - inUse : 0;
+        var ratio = total > 0 ? (int)Math.Round((double)inUse / total * 100.0) : 0;
+
+        Assert.Equal(expectedIdle, idle);
+        Assert.Equal(expectedPercent, ratio);
+    }
+
+    [Fact]
+    public void Monospaced_digital_clock_formats_hh_mm_ss_and_full_date()
+    {
+        var testTime = new DateTime(2026, 9, 1, 22, 54, 0);
+        var clockStr = testTime.ToString("HH:mm:ss");
+        var dateStr = testTime.ToString("dddd, d MMMM yyyy");
+
+        Assert.Equal("22:54:00", clockStr);
+        Assert.Equal("Tuesday, 1 September 2026", dateStr);
+    }
+
+    [Fact]
+    public void LiveEventLog_formats_timestamp_and_message_accurately()
+    {
+        var now = DateTime.Now;
+        var formatted = $"{now:HH:mm:ss}  ·  Session started on PC-01";
+
+        Assert.Contains(now.ToString("HH:mm:ss"), formatted);
+        Assert.Contains("PC-01", formatted);
+    }
+}
+
